@@ -4,6 +4,12 @@ A tiny native macOS to-do list that stays out of the way until you need it.
 
 Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer rests in a chosen screen corner. It is built with SwiftUI, AppKit and SwiftData, with no account or cloud service required.
 
+## Demo
+
+[![Watch the Peekaboo demo](Media/peekaboo-demo-poster.png)](Media/peekaboo-demo.mp4)
+
+Click the preview to watch Peekaboo in action.
+
 ## Features
 
 - Reveals from any screen corner after a configurable delay
