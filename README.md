@@ -6,9 +6,7 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 
 ## Demo
 
-[![Watch the Peekaboo demo](Media/peekaboo-demo-poster.png)](Media/peekaboo-demo.mp4)
-
-Click the preview to watch Peekaboo in action.
+![Peekaboo showing In Progress and To do tasks](Media/peekaboo-preview.png)
 
 ## Features
 
