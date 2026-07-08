@@ -1,0 +1,59 @@
+# Peakaboo
+
+A tiny native macOS to-do list that stays out of the way until you need it.
+
+Peakaboo lives in the menu bar and reveals a lightweight panel when the pointer rests in a chosen screen corner. It is built with SwiftUI, AppKit and SwiftData, with no account or cloud service required.
+
+## Features
+
+- Reveals from any screen corner after a configurable delay
+- Global `Control–Option–Space` shortcut for creating a task
+- To do, In Progress and Done states
+- None, Low, Medium and High priorities
+- Local SwiftData persistence
+- Automatic cleanup of completed tasks after the day changes
+- Multi-display and full-screen Space support
+- Optional translucent or solid panel
+- Launch at login support
+- Native menu bar app with no Dock icon
+- Event-driven UI and low-overhead pointer sampling
+
+## Requirements
+
+- macOS 14 or newer
+- Xcode 16 or newer
+
+## Build and run
+
+1. Clone the repository.
+2. Open `Peakaboo.xcodeproj` in Xcode.
+3. Select the `Peakaboo` target and choose your development team under Signing & Capabilities.
+4. Change the bundle identifier if your Apple developer account does not own `com.emanueledipietro.Peakaboo`.
+5. Run the app.
+
+Choose a corner and reveal delay in Settings. Press `Control–Option–Space` from anywhere in macOS to reveal Peakaboo with the new-task field focused.
+
+## Interactions
+
+- Double-click a To do task to move it to In Progress.
+- Double-click an In Progress task to move it back to To do.
+- Click the priority-colored circle to complete a task.
+- Click the circle on a completed task to restore it.
+- Use the trailing ellipsis to edit, move, reprioritize or delete a task.
+
+## Tests
+
+```sh
+xcodebuild test \
+  -project Peakaboo.xcodeproj \
+  -scheme Peakaboo \
+  -destination 'platform=macOS'
+```
+
+## Project generation
+
+`Scripts/generate_project.rb` generates the Xcode project using the Ruby `xcodeproj` gem. Run it after adding source files that need to be included in the project.
+
+## License
+
+Peakaboo is available under the [MIT License](LICENSE).

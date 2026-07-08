@@ -1,0 +1,116 @@
+import AppKit
+
+@MainActor
+final class CornerHoverMonitor {
+    private let settings: AppSettings
+    private let panelController: PeekPanelController
+    private let uiState: PanelUIState
+
+    private var stateMachine = CornerHoverStateMachine()
+    private var pollingTimer: DispatchSourceTimer?
+    private var screenChangeToken: NSObjectProtocol?
+    private var responsivenessActivity: NSObjectProtocol?
+
+    init(settings: AppSettings, panelController: PeekPanelController, uiState: PanelUIState) {
+        self.settings = settings
+        self.panelController = panelController
+        self.uiState = uiState
+    }
+
+    func start() {
+        guard pollingTimer == nil else { return }
+
+        responsivenessActivity = ProcessInfo.processInfo.beginActivity(
+            options: .userInitiatedAllowingIdleSystemSleep,
+            reason: "Keep the configured Peakaboo corner responsive"
+        )
+
+        // A coalesced 20 Hz sample keeps the corner responsive without tracking raw mouse events.
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(
+            deadline: .now(),
+            repeating: .milliseconds(50),
+            leeway: .milliseconds(15)
+        )
+        timer.setEventHandler { [weak self] in
+            MainActor.assumeIsolated { self?.samplePointer() }
+        }
+        pollingTimer = timer
+        timer.resume()
+
+        screenChangeToken = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.samplePointer() }
+        }
+    }
+
+    func stop() {
+        pollingTimer?.cancel()
+        pollingTimer = nil
+        if let screenChangeToken { NotificationCenter.default.removeObserver(screenChangeToken) }
+        screenChangeToken = nil
+        if let responsivenessActivity {
+            ProcessInfo.processInfo.endActivity(responsivenessActivity)
+            self.responsivenessActivity = nil
+        }
+        stateMachine.forceHidden()
+        panelController.hide()
+    }
+
+    func revealProgrammatically(openComposer: Bool = false) {
+        guard let screen = screen(containing: NSEvent.mouseLocation) ?? NSScreen.main else { return }
+        if openComposer { uiState.beginAdding() }
+        stateMachine.forceVisible(at: ProcessInfo.processInfo.systemUptime, grace: 3)
+        panelController.show(on: screen, corner: settings.corner, makeKey: openComposer)
+    }
+
+    func keepVisibleForUITesting(openComposer: Bool = false) {
+        guard let screen = NSScreen.main else { return }
+        if openComposer { uiState.beginAdding() }
+        stateMachine.forceVisible(at: ProcessInfo.processInfo.systemUptime, grace: 86_400)
+        panelController.show(on: screen, corner: settings.corner, makeKey: true)
+    }
+
+    private func samplePointer() {
+        let location = NSEvent.mouseLocation
+        let activeScreen = screen(containing: location)
+        // When the cursor is pinned against a screen edge, mouseLocation sits exactly on
+        // the frame boundary (e.g. y == maxY at the top), which CGRect.contains excludes.
+        // Expand the hotspot outward so edge-pinned coordinates still count as inside.
+        let isInHotspot = activeScreen.map {
+            PanelGeometry.hotspot(in: $0.frame, corner: settings.corner)
+                .insetBy(dx: -1, dy: -1)
+                .contains(location)
+        } ?? false
+        let isInPanel = panelController.visibleFrame?.contains(location) ?? false
+
+        let uptime = ProcessInfo.processInfo.systemUptime
+        let transition = stateMachine.update(
+            at: uptime,
+            isInHotspot: isInHotspot,
+            isInPanel: isInPanel,
+            isInteractionLocked: uiState.isInteractionLocked,
+            revealDelay: settings.revealDelay
+        )
+
+        switch transition {
+        case .none:
+            break
+        case .reveal:
+            guard let activeScreen else { return }
+            panelController.show(on: activeScreen, corner: settings.corner)
+        case .hide:
+            panelController.hide()
+        }
+    }
+
+    private func screen(containing point: CGPoint) -> NSScreen? {
+        NSScreen.screens.first { NSMouseInRect(point, $0.frame, false) }
+            // Edge-pinned pointer coordinates can land exactly on frame.maxX, outside
+            // every screen frame; tolerate a 1 pt overshoot so corners keep working.
+            ?? NSScreen.screens.first { $0.frame.insetBy(dx: -1, dy: -1).contains(point) }
+    }
+}
