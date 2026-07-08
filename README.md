@@ -1,8 +1,8 @@
-# Peakaboo
+# Peekaboo
 
 A tiny native macOS to-do list that stays out of the way until you need it.
 
-Peakaboo lives in the menu bar and reveals a lightweight panel when the pointer rests in a chosen screen corner. It is built with SwiftUI, AppKit and SwiftData, with no account or cloud service required.
+Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer rests in a chosen screen corner. It is built with SwiftUI, AppKit and SwiftData, with no account or cloud service required.
 
 ## Features
 
@@ -26,12 +26,12 @@ Peakaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 ## Build and run
 
 1. Clone the repository.
-2. Open `Peakaboo.xcodeproj` in Xcode.
-3. Select the `Peakaboo` target and choose your development team under Signing & Capabilities.
-4. Change the bundle identifier if your Apple developer account does not own `com.emanueledipietro.Peakaboo`.
+2. Open `Peekaboo.xcodeproj` in Xcode.
+3. Select the `Peekaboo` target and choose your development team under Signing & Capabilities.
+4. Change the bundle identifier if your Apple developer account does not own `com.emanueledipietro.Peekaboo`.
 5. Run the app.
 
-Choose a corner and reveal delay in Settings. Press `Control–Option–Space` from anywhere in macOS to reveal Peakaboo with the new-task field focused.
+Choose a corner and reveal delay in Settings. Press `Control–Option–Space` from anywhere in macOS to reveal Peekaboo with the new-task field focused.
 
 ## Interactions
 
@@ -45,8 +45,8 @@ Choose a corner and reveal delay in Settings. Press `Control–Option–Space` f
 
 ```sh
 xcodebuild test \
-  -project Peakaboo.xcodeproj \
-  -scheme Peakaboo \
+  -project Peekaboo.xcodeproj \
+  -scheme Peekaboo \
   -destination 'platform=macOS'
 ```
 
@@ -56,4 +56,4 @@ xcodebuild test \
 
 ## License
 
-Peakaboo is available under the [MIT License](LICENSE).
+Peekaboo is available under the [MIT License](LICENSE).

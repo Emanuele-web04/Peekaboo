@@ -25,7 +25,7 @@ final class AppCoordinator {
     }
 
     private init() {
-        isUITesting = ProcessInfo.processInfo.environment["PEAKABOO_UI_TESTING"] == "1"
+        isUITesting = ProcessInfo.processInfo.environment["PEEKABOO_UI_TESTING"] == "1"
 
         let container: ModelContainer
         do {

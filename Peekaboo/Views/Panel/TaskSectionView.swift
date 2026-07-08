@@ -30,6 +30,6 @@ struct TaskSectionView: View {
                     )
             }
         }
-        .animation(reduceMotion ? nil : PeakabooMotion.spring, value: tasks.map(\.id))
+        .animation(reduceMotion ? nil : PeekabooMotion.spring, value: tasks.map(\.id))
     }
 }

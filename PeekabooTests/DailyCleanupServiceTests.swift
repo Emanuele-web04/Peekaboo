@@ -1,5 +1,5 @@
 import XCTest
-@testable import Peakaboo
+@testable import Peekaboo
 
 final class DailyCleanupServiceTests: XCTestCase {
     @MainActor

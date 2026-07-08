@@ -72,7 +72,7 @@ struct TaskComposerView: View {
         .padding(.horizontal, 4)
         .padding(.vertical, 7)
         .frame(height: 62)
-        .animation(PeakabooMotion.quick, value: priority)
+        .animation(PeekabooMotion.quick, value: priority)
         .onAppear(perform: focus)
     }
 

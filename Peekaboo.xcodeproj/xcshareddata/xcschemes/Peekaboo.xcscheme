@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "81BDB7075EDDC61F0F186F30"
-               BuildableName = "Peakaboo.app"
-               BlueprintName = "Peakaboo"
-               ReferencedContainer = "container:Peakaboo.xcodeproj">
+               BuildableName = "Peekaboo.app"
+               BlueprintName = "Peekaboo"
+               ReferencedContainer = "container:Peekaboo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -31,9 +31,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "81BDB7075EDDC61F0F186F30"
-            BuildableName = "Peakaboo.app"
-            BlueprintName = "Peakaboo"
-            ReferencedContainer = "container:Peakaboo.xcodeproj">
+            BuildableName = "Peekaboo.app"
+            BlueprintName = "Peekaboo"
+            ReferencedContainer = "container:Peekaboo.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -42,9 +42,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7F7C60A475D0C0E4A2B8ECEC"
-               BuildableName = "PeakabooTests.xctest"
-               BlueprintName = "PeakabooTests"
-               ReferencedContainer = "container:Peakaboo.xcodeproj">
+               BuildableName = "PeekabooTests.xctest"
+               BlueprintName = "PeekabooTests"
+               ReferencedContainer = "container:Peekaboo.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -52,9 +52,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "4F6C406B5C4C5990BE255998"
-               BuildableName = "PeakabooUITests.xctest"
-               BlueprintName = "PeakabooUITests"
-               ReferencedContainer = "container:Peakaboo.xcodeproj">
+               BuildableName = "PeekabooUITests.xctest"
+               BlueprintName = "PeekabooUITests"
+               ReferencedContainer = "container:Peekaboo.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -74,9 +74,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "81BDB7075EDDC61F0F186F30"
-            BuildableName = "Peakaboo.app"
-            BlueprintName = "Peakaboo"
-            ReferencedContainer = "container:Peakaboo.xcodeproj">
+            BuildableName = "Peekaboo.app"
+            BlueprintName = "Peekaboo"
+            ReferencedContainer = "container:Peekaboo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -91,9 +91,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "81BDB7075EDDC61F0F186F30"
-            BuildableName = "Peakaboo.app"
-            BlueprintName = "Peakaboo"
-            ReferencedContainer = "container:Peakaboo.xcodeproj">
+            BuildableName = "Peekaboo.app"
+            BlueprintName = "Peekaboo"
+            ReferencedContainer = "container:Peekaboo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

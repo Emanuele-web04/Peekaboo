@@ -15,7 +15,7 @@ struct PeekPanelView: View {
 
             if uiState.isComposerPresented {
                 TaskComposerView(store: store, uiState: uiState)
-                    .padding(.horizontal, PeakabooStyle.horizontalPadding)
+                    .padding(.horizontal, PeekabooStyle.horizontalPadding)
                     .padding(.bottom, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -33,25 +33,25 @@ struct PeekPanelView: View {
                     .font(.caption2)
                     .foregroundStyle(.red)
                     .lineLimit(2)
-                    .padding(.horizontal, PeakabooStyle.horizontalPadding)
+                    .padding(.horizontal, PeekabooStyle.horizontalPadding)
                     .padding(.bottom, 10)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .peekPanelSurface(translucent: settings.isTranslucent)
-        .animation(reduceMotion ? nil : PeakabooMotion.spring, value: uiState.isComposerPresented)
-        .animation(reduceMotion ? nil : PeakabooMotion.spring, value: store.tasks.map(\.id))
+        .animation(reduceMotion ? nil : PeekabooMotion.spring, value: uiState.isComposerPresented)
+        .animation(reduceMotion ? nil : PeekabooMotion.spring, value: store.tasks.map(\.id))
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("peakaboo")
+            Text("peekaboo")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
             Text("· \(activeSubtitle)")
                 .font(.system(size: 10, design: .rounded))
                 .foregroundStyle(.tertiary)
                 .contentTransition(.numericText())
-                .animation(reduceMotion ? nil : PeakabooMotion.quick, value: activeSubtitle)
+                .animation(reduceMotion ? nil : PeekabooMotion.quick, value: activeSubtitle)
 
             Spacer()
 
@@ -108,7 +108,7 @@ struct PeekPanelView: View {
             .accessibilityLabel(uiState.isComposerPresented ? "Cancel" : "New task")
             .accessibilityIdentifier("add-task-button")
         }
-        .padding(.horizontal, PeakabooStyle.horizontalPadding)
+        .padding(.horizontal, PeekabooStyle.horizontalPadding)
         .frame(height: 44)
     }
 
@@ -122,7 +122,7 @@ struct PeekPanelView: View {
                     }
                 }
             }
-            .padding(.horizontal, PeakabooStyle.horizontalPadding - 4)
+            .padding(.horizontal, PeekabooStyle.horizontalPadding - 4)
             .padding(.bottom, 14)
         }
         .scrollIndicators(.never)

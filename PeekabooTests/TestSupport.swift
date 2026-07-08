@@ -1,6 +1,6 @@
 import Foundation
 import SwiftData
-@testable import Peakaboo
+@testable import Peekaboo
 
 @MainActor
 func makeTestStore(now: @escaping () -> Date = Date.init) throws -> TaskStore {

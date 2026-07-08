@@ -1,12 +1,12 @@
 import XCTest
 
-final class PeakabooUITests: XCTestCase {
+final class PeekabooUITests: XCTestCase {
     private var app: XCUIApplication!
 
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchEnvironment["PEAKABOO_UI_TESTING"] = "1"
+        app.launchEnvironment["PEEKABOO_UI_TESTING"] = "1"
         app.launch()
     }
 

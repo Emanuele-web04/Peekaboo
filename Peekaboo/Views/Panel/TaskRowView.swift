@@ -46,7 +46,7 @@ struct TaskRowView: View {
 
             trailingAction
         }
-        .frame(height: PeakabooStyle.rowHeight)
+        .frame(height: PeekabooStyle.rowHeight)
         .padding(.horizontal, 4)
         .background(
             Color.primary.opacity(isHovering ? 0.055 : 0),
@@ -55,12 +55,12 @@ struct TaskRowView: View {
         .contentShape(Rectangle())
         .contextMenu { taskActions }
         .onHover { hovering in
-            withAnimation(reduceMotion ? nil : PeakabooMotion.quick) {
+            withAnimation(reduceMotion ? nil : PeekabooMotion.quick) {
                 isHovering = hovering
             }
         }
-        .animation(reduceMotion ? nil : PeakabooMotion.spring, value: task.statusRaw)
-        .animation(reduceMotion ? nil : PeakabooMotion.quick, value: task.priorityRaw)
+        .animation(reduceMotion ? nil : PeekabooMotion.spring, value: task.statusRaw)
+        .animation(reduceMotion ? nil : PeekabooMotion.quick, value: task.priorityRaw)
         .onChange(of: isEditing) { _, nowEditing in
             guard nowEditing else { return }
             editTitle = task.title

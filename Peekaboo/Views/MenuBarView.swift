@@ -6,7 +6,7 @@ struct MenuBarView: View {
     let coordinator: AppCoordinator
 
     var body: some View {
-        Button("Show Peakaboo", systemImage: "eye") {
+        Button("Show Peekaboo", systemImage: "eye") {
             coordinator.showPanel()
         }
 
@@ -31,7 +31,7 @@ struct MenuBarView: View {
 
         Divider()
 
-        Button("Quit Peakaboo", systemImage: "power") {
+        Button("Quit Peekaboo", systemImage: "power") {
             NSApp.terminate(nil)
         }
         .keyboardShortcut("q")

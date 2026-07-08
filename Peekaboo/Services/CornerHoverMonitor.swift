@@ -22,7 +22,7 @@ final class CornerHoverMonitor {
 
         responsivenessActivity = ProcessInfo.processInfo.beginActivity(
             options: .userInitiatedAllowingIdleSystemSleep,
-            reason: "Keep the configured Peakaboo corner responsive"
+            reason: "Keep the configured Peekaboo corner responsive"
         )
 
         // A coalesced 20 Hz sample keeps the corner responsive without tracking raw mouse events.

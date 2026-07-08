@@ -42,7 +42,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Slider(value: $settings.revealDelay, in: 0.2...2.0, step: 0.1)
-                Text("Pause in the corner for this long before Peakaboo appears.")
+                Text("Pause in the corner for this long before Peekaboo appears.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -63,7 +63,7 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Toggle(isOn: loginBinding) {
-                    Label("Launch Peakaboo at login", systemImage: "power")
+                    Label("Launch Peekaboo at login", systemImage: "power")
                         .font(.headline)
                 }
 
@@ -101,7 +101,7 @@ struct SettingsView: View {
                     .foregroundStyle(Color(nsColor: .windowBackgroundColor))
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Peakaboo")
+                Text("Peekaboo")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                 Text("A quiet list, right around the corner.")
                     .font(.callout)

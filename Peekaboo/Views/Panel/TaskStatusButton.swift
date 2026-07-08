@@ -19,7 +19,7 @@ struct TaskStatusButton: View {
         }
         .buttonStyle(.plain)
         .help(status == .done ? "Move back to To do" : "Mark done")
-        .animation(reduceMotion ? nil : PeakabooMotion.spring, value: status)
+        .animation(reduceMotion ? nil : PeekabooMotion.spring, value: status)
     }
 
     private var statusMark: some View {
