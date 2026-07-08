@@ -6,7 +6,7 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 
 ## Demo
 
-![Peekaboo showing In Progress and To do tasks](Media/peekaboo-preview.png)
+![Peekaboo showing In Progress and To do tasks](Media/peekaboo-fullscreen-preview.png)
 
 ## Features
 
