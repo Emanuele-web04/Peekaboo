@@ -16,7 +16,7 @@ final class TaskItem {
         id: UUID = UUID(),
         title: String,
         status: TaskStatus = .todo,
-        priority: TaskPriority = .medium,
+        priority: TaskPriority = .none,
         createdAt: Date = Date(),
         updatedAt: Date? = nil,
         completedAt: Date? = nil,

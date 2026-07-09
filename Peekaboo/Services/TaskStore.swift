@@ -19,7 +19,7 @@ final class TaskStore: ObservableObject {
     @discardableResult
     func create(
         title: String,
-        priority: TaskPriority = .medium,
+        priority: TaskPriority = .none,
         status: TaskStatus = .todo
     ) -> TaskItem? {
         let normalizedTitle = Self.normalized(title)

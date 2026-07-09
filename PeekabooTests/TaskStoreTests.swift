@@ -28,7 +28,7 @@ final class TaskStoreTests: XCTestCase {
 
         XCTAssertEqual(task?.title, "Write release notes")
         XCTAssertEqual(task?.status, .todo)
-        XCTAssertEqual(task?.priority, .medium)
+        XCTAssertEqual(task?.priority, TaskPriority.none)
         XCTAssertEqual(store.tasks.count, 1)
     }
 

@@ -5,7 +5,7 @@ struct TaskComposerView: View {
     @ObservedObject var uiState: PanelUIState
 
     @State private var title = ""
-    @State private var priority: TaskPriority = .medium
+    @State private var priority: TaskPriority = .none
     @FocusState private var isTitleFocused: Bool
 
     var body: some View {
@@ -87,13 +87,13 @@ struct TaskComposerView: View {
             status: uiState.selectedScope.creationStatus
         ) != nil else { return }
         title = ""
-        priority = .medium
+        priority = .none
         uiState.endAdding()
     }
 
     private func cancel() {
         title = ""
-        priority = .medium
+        priority = .none
         uiState.endAdding()
     }
 
