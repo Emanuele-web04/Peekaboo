@@ -40,6 +40,6 @@ struct MenuBarView: View {
     }
 
     private var activeTaskCount: Int {
-        store.tasks.filter { $0.status != .done }.count
+        store.tasks.filter { TaskScope.tasks.countedStatuses.contains($0.status) }.count
     }
 }

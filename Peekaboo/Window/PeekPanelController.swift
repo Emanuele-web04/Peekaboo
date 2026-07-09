@@ -126,9 +126,14 @@ final class PeekPanelController {
     }
 
     private func bindContentSize() {
-        Publishers.CombineLatest3(store.$tasks, uiState.$isComposerPresented, settings.$corner)
+        Publishers.CombineLatest4(
+            store.$tasks,
+            uiState.$isComposerPresented,
+            settings.$corner,
+            uiState.$selectedScope
+        )
             .receive(on: RunLoop.main)
-            .sink { [weak self] _, _, corner in
+            .sink { [weak self] _, _, corner, _ in
                 guard let self else { return }
                 self.currentCorner = corner
                 self.resizeAndReanchor()
@@ -159,11 +164,13 @@ final class PeekPanelController {
     }
 
     private func frame(on screen: NSScreen, corner: ScreenCorner) -> CGRect {
-        let sectionCount = TaskStatus.allCases.reduce(into: 0) { count, status in
+        let statuses = uiState.selectedScope.statuses
+        let sectionCount = statuses.reduce(into: 0) { count, status in
             if !store.orderedTasks(for: status).isEmpty { count += 1 }
         }
+        let taskCount = store.tasks.filter { statuses.contains($0.status) }.count
         let height = PanelGeometry.preferredHeight(
-            taskCount: store.tasks.count,
+            taskCount: taskCount,
             sectionCount: sectionCount,
             isComposing: uiState.isComposerPresented
         )

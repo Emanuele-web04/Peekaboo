@@ -7,11 +7,10 @@ struct PeekPanelView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let statusOrder: [TaskStatus] = [.inProgress, .todo, .done]
-
     var body: some View {
         VStack(spacing: 0) {
             header
+            scopePicker
 
             if uiState.isComposerPresented {
                 TaskComposerView(store: store, uiState: uiState)
@@ -20,7 +19,7 @@ struct PeekPanelView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            if store.tasks.isEmpty {
+            if visibleTaskCount == 0 {
                 emptyState
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else {
@@ -41,6 +40,7 @@ struct PeekPanelView: View {
         .peekPanelSurface(translucent: settings.isTranslucent)
         .animation(reduceMotion ? nil : PeekabooMotion.spring, value: uiState.isComposerPresented)
         .animation(reduceMotion ? nil : PeekabooMotion.spring, value: store.tasks.map(\.id))
+        .animation(reduceMotion ? nil : PeekabooMotion.quick, value: uiState.selectedScope)
     }
 
     private var header: some View {
@@ -85,18 +85,32 @@ struct PeekPanelView: View {
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
-            .help(uiState.isComposerPresented ? "Cancel" : "New task")
-            .accessibilityLabel(uiState.isComposerPresented ? "Cancel" : "New task")
+            .help(uiState.isComposerPresented ? "Cancel" : newItemTitle)
+            .accessibilityLabel(uiState.isComposerPresented ? "Cancel" : newItemTitle)
             .accessibilityIdentifier("add-task-button")
         }
         .padding(.horizontal, PeekabooStyle.horizontalPadding)
         .frame(height: 44)
     }
 
+    private var scopePicker: some View {
+        Picker("List", selection: scopeBinding) {
+            ForEach(TaskScope.allCases) { scope in
+                Text(scope.title).tag(scope)
+            }
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.small)
+        .labelsHidden()
+        .padding(.horizontal, PeekabooStyle.horizontalPadding)
+        .padding(.bottom, 8)
+        .accessibilityIdentifier("task-scope-picker")
+    }
+
     private var taskList: some View {
         ScrollView {
             LazyVStack(spacing: 7) {
-                ForEach(statusOrder) { status in
+                ForEach(uiState.selectedScope.statuses) { status in
                     let tasks = store.orderedTasks(for: status)
                     if !tasks.isEmpty {
                         TaskSectionView(store: store, uiState: uiState, status: status, tasks: tasks)
@@ -111,9 +125,11 @@ struct PeekPanelView: View {
 
     private var emptyState: some View {
         VStack(spacing: 5) {
-            Text("Nothing hiding here")
+            Text(uiState.selectedScope == .tasks ? "Nothing hiding here" : "No ideas waiting")
                 .font(.system(size: 13, weight: .medium, design: .rounded))
-            Text("Add a task and it will stay close by.")
+            Text(uiState.selectedScope == .tasks
+                ? "Add a task and it will stay close by."
+                : "Capture an idea for later.")
                 .font(.system(size: 11, design: .rounded))
                 .foregroundStyle(.secondary)
         }
@@ -122,7 +138,29 @@ struct PeekPanelView: View {
     }
 
     private var activeSubtitle: String {
-        let activeCount = store.tasks.filter { $0.status != .done }.count
-        return activeCount == 1 ? "1 active task" : "\(activeCount) active tasks"
+        let count = store.tasks.filter {
+            uiState.selectedScope.countedStatuses.contains($0.status)
+        }.count
+        switch uiState.selectedScope {
+        case .tasks:
+            return count == 1 ? "1 active task" : "\(count) active tasks"
+        case .backlog:
+            return count == 1 ? "1 idea" : "\(count) ideas"
+        }
+    }
+
+    private var visibleTaskCount: Int {
+        store.tasks.filter { uiState.selectedScope.statuses.contains($0.status) }.count
+    }
+
+    private var newItemTitle: String {
+        uiState.selectedScope == .tasks ? "New task" : "New backlog idea"
+    }
+
+    private var scopeBinding: Binding<TaskScope> {
+        Binding(
+            get: { uiState.selectedScope },
+            set: { uiState.selectScope($0) }
+        )
     }
 }

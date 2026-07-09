@@ -19,6 +19,7 @@ extension TaskStatus {
         case .todo: .secondary
         case .inProgress: .orange
         case .done: .green
+        case .backlog: .secondary
         }
     }
 }

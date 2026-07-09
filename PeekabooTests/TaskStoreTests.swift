@@ -89,33 +89,55 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
-    func testToggleCompletionReturnsDoneTaskToTodo() throws {
+    func testPrimaryActionReturnsDoneTaskToTodo() throws {
         let store = try makeTestStore()
         let task = try XCTUnwrap(store.create(title: "Toggle me"))
 
-        store.toggleCompletion(task)
+        store.performPrimaryAction(task)
         XCTAssertEqual(task.status, .done)
         XCTAssertNotNil(task.completedAt)
 
-        store.toggleCompletion(task)
+        store.performPrimaryAction(task)
         XCTAssertEqual(task.status, .todo)
         XCTAssertNil(task.completedAt)
     }
 
     @MainActor
-    func testToggleProgressMovesBetweenTodoAndInProgress() throws {
+    func testDoubleClickActionMovesBetweenTodoAndInProgress() throws {
         let store = try makeTestStore()
         let task = try XCTUnwrap(store.create(title: "Toggle progress"))
 
-        store.toggleProgress(task)
+        store.performDoubleClickAction(task)
         XCTAssertEqual(task.status, .inProgress)
 
-        store.toggleProgress(task)
+        store.performDoubleClickAction(task)
         XCTAssertEqual(task.status, .todo)
 
         store.markDone(task)
-        store.toggleProgress(task)
+        store.performDoubleClickAction(task)
         XCTAssertEqual(task.status, .done)
+    }
+
+    @MainActor
+    func testBacklogReusesTaskRulesAndPromotesToTodo() throws {
+        let store = try makeTestStore()
+        let idea = try XCTUnwrap(store.create(
+            title: "Explore CloudKit",
+            priority: .high,
+            status: .backlog
+        ))
+
+        XCTAssertEqual(idea.status, .backlog)
+        XCTAssertEqual(idea.priority, .high)
+        XCTAssertEqual(store.orderedTasks(for: .backlog).map(\.id), [idea.id])
+
+        store.performPrimaryAction(idea)
+        XCTAssertEqual(idea.status, .todo)
+        XCTAssertNil(idea.completedAt)
+
+        store.setStatus(.backlog, for: idea)
+        store.performDoubleClickAction(idea)
+        XCTAssertEqual(idea.status, .todo)
     }
 
     @MainActor

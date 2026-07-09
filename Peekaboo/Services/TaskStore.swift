@@ -17,17 +17,21 @@ final class TaskStore: ObservableObject {
     }
 
     @discardableResult
-    func create(title: String, priority: TaskPriority = .medium) -> TaskItem? {
+    func create(
+        title: String,
+        priority: TaskPriority = .medium,
+        status: TaskStatus = .todo
+    ) -> TaskItem? {
         let normalizedTitle = Self.normalized(title)
         guard !normalizedTitle.isEmpty else { return nil }
 
         let timestamp = now()
         let task = TaskItem(
             title: normalizedTitle,
-            status: .todo,
+            status: status,
             priority: priority,
             createdAt: timestamp,
-            manualOrder: nextManualOrder(status: .todo, priority: priority)
+            manualOrder: nextManualOrder(status: status, priority: priority)
         )
         context.insert(task)
         tasks.append(task)
@@ -68,15 +72,9 @@ final class TaskStore: ObservableObject {
         setStatus(.inProgress, for: task)
     }
 
-    func toggleProgress(_ task: TaskItem) {
-        switch task.status {
-        case .todo:
-            setStatus(.inProgress, for: task)
-        case .inProgress:
-            setStatus(.todo, for: task)
-        case .done:
-            break
-        }
+    func performDoubleClickAction(_ task: TaskItem) {
+        guard let destination = task.status.doubleClickDestination else { return }
+        setStatus(destination, for: task)
     }
 
     func markDone(_ task: TaskItem) {
@@ -84,8 +82,8 @@ final class TaskStore: ObservableObject {
         setStatus(.done, for: task)
     }
 
-    func toggleCompletion(_ task: TaskItem) {
-        setStatus(task.status == .done ? .todo : .done, for: task)
+    func performPrimaryAction(_ task: TaskItem) {
+        setStatus(task.status.primaryActionDestination, for: task)
     }
 
     func delete(_ task: TaskItem) {

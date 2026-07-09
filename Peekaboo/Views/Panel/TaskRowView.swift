@@ -17,7 +17,7 @@ struct TaskRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             TaskStatusButton(status: task.status, priority: task.priority) {
-                store.toggleCompletion(task)
+                store.performPrimaryAction(task)
             }
             .accessibilityIdentifier("complete-task-\(task.id.uuidString)")
 
@@ -46,7 +46,7 @@ struct TaskRowView: View {
             .contentShape(Rectangle())
             .onTapGesture(count: 2) {
                 guard !isEditing else { return }
-                store.toggleProgress(task)
+                store.performDoubleClickAction(task)
             }
             .help(progressToggleHelp)
 
@@ -86,9 +86,7 @@ struct TaskRowView: View {
 
     private var dragPreview: some View {
         HStack(spacing: 7) {
-            Circle()
-                .stroke(task.priority.color, lineWidth: 1.5)
-                .frame(width: 13, height: 13)
+            TaskStatusMark(status: task.status, priority: task.priority, size: 13)
             Text(task.title)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .lineLimit(2)
@@ -173,7 +171,7 @@ struct TaskRowView: View {
         }
 
         Menu("Move to") {
-            ForEach([TaskStatus.inProgress, .todo, .done]) { status in
+            ForEach(TaskStatus.moveMenuOrder) { status in
                 Button {
                     store.setStatus(status, for: task)
                 } label: {
@@ -209,10 +207,6 @@ struct TaskRowView: View {
     }
 
     private var progressToggleHelp: String {
-        switch task.status {
-        case .todo: "Double-click to start"
-        case .inProgress: "Double-click to move back to To do"
-        case .done: task.title
-        }
+        task.status.doubleClickTitle
     }
 }

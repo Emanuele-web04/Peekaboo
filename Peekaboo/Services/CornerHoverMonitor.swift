@@ -61,8 +61,9 @@ final class CornerHoverMonitor {
         panelController.hide()
     }
 
-    func revealProgrammatically(openComposer: Bool = false) {
+    func revealProgrammatically(openComposer: Bool = false, scope: TaskScope? = nil) {
         guard let screen = screen(containing: NSEvent.mouseLocation) ?? NSScreen.main else { return }
+        if let scope { uiState.selectScope(scope) }
         if openComposer {
             var transaction = Transaction()
             transaction.disablesAnimations = true

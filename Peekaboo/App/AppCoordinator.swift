@@ -95,7 +95,7 @@ final class AppCoordinator {
     }
 
     func showNewTask() {
-        hoverMonitor.revealProgrammatically(openComposer: true)
+        hoverMonitor.revealProgrammatically(openComposer: true, scope: .tasks)
     }
 
     func openSettings() {

@@ -11,7 +11,7 @@ struct TaskComposerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 9) {
-                TextField("What needs doing?", text: $title)
+                TextField(placeholder, text: $title)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13, design: .rounded))
                     .focused($isTitleFocused)
@@ -81,7 +81,11 @@ struct TaskComposerView: View {
     }
 
     private func save() {
-        guard store.create(title: title, priority: priority) != nil else { return }
+        guard store.create(
+            title: title,
+            priority: priority,
+            status: uiState.selectedScope.creationStatus
+        ) != nil else { return }
         title = ""
         priority = .medium
         uiState.endAdding()
@@ -91,5 +95,12 @@ struct TaskComposerView: View {
         title = ""
         priority = .medium
         uiState.endAdding()
+    }
+
+    private var placeholder: String {
+        switch uiState.selectedScope {
+        case .tasks: "What needs doing?"
+        case .backlog: "Capture an idea…"
+        }
     }
 }

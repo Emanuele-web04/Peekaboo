@@ -6,6 +6,7 @@ final class PanelUIState: ObservableObject {
     @Published var isComposerPresented = false
     @Published var editingTaskID: UUID?
     @Published var isMenuTracking = false
+    @Published private(set) var selectedScope: TaskScope = .tasks
     private(set) var draggedTaskID: UUID?
 
     var isInteractionLocked: Bool {
@@ -15,6 +16,14 @@ final class PanelUIState: ObservableObject {
     func beginAdding() {
         editingTaskID = nil
         isComposerPresented = true
+    }
+
+    func selectScope(_ scope: TaskScope) {
+        guard selectedScope != scope else { return }
+        isComposerPresented = false
+        editingTaskID = nil
+        draggedTaskID = nil
+        selectedScope = scope
     }
 
     func endAdding() {
