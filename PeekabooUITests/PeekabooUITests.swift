@@ -40,6 +40,8 @@ final class PeekabooUITests: XCTestCase {
         XCTAssertTrue(actions.waitForExistence(timeout: 2))
         actions.click()
 
+        XCTAssertTrue(app.menuItems["Copy"].waitForExistence(timeout: 2))
+
         let editTitle = app.menuItems["Edit title…"]
         XCTAssertTrue(editTitle.waitForExistence(timeout: 2))
         editTitle.click()

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct TaskRowView: View {
@@ -114,6 +115,10 @@ struct TaskRowView: View {
             uiState.beginEditing(task)
         }
 
+        Button("Copy", systemImage: "doc.on.doc") {
+            copyTitle()
+        }
+
         Menu("Priority") {
             ForEach(TaskPriority.allCases.reversed()) { priority in
                 Button {
@@ -156,6 +161,12 @@ struct TaskRowView: View {
 
     private func cancelRename() {
         uiState.endEditing()
+    }
+
+    private func copyTitle() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(task.title, forType: .string)
     }
 
     private var progressToggleHelp: String {
