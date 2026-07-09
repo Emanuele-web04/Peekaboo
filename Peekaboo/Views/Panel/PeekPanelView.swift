@@ -104,7 +104,7 @@ struct PeekPanelView: View {
                 scopeCapsule(scope)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, PeekabooStyle.horizontalPadding)
         .padding(.bottom, 8)
         .accessibilityElement(children: .contain)
@@ -120,23 +120,20 @@ struct PeekPanelView: View {
             Text(scope.title)
                 .font(.system(
                     size: 10,
-                    weight: .medium,
+                    weight: isSelected ? .semibold : .medium,
                     design: .rounded
                 ))
-                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                .foregroundStyle(
+                    isSelected
+                        ? Color(nsColor: .windowBackgroundColor)
+                        : Color.secondary
+                )
                 .padding(.horizontal, 10)
                 .frame(height: 22)
                 .background(
-                    Color.primary.opacity(isSelected ? 0.18 : 0.035),
+                    Color.primary.opacity(isSelected ? 0.9 : 0.035),
                     in: Capsule(style: .continuous)
                 )
-                .overlay {
-                    Capsule(style: .continuous)
-                        .stroke(
-                            Color.primary.opacity(isSelected ? 0.38 : 0),
-                            lineWidth: 0.6
-                        )
-                }
                 .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
