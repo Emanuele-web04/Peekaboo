@@ -61,7 +61,9 @@ xcodebuild test \
 
 ## Project generation
 
-`Scripts/generate_project.rb` generates the Xcode project using the Ruby `xcodeproj` gem and stable UUIDs. Run it after adding source files that need to be included in the project. Use `--help` to inspect the command without changing the project.
+`Scripts/generate_project.rb` atomically generates the Xcode project using the Ruby `xcodeproj` gem and stable UUIDs. Run it after adding source files that need to be included in the project. Use `--help` to inspect the command without changing the project, or `--output PATH` to generate a separate copy.
+
+Run `ruby Scripts/verify_project_generation.rb` to confirm that two consecutive generations are identical.
 
 ## License
 

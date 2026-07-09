@@ -34,12 +34,60 @@ final class TaskStoreTests: XCTestCase {
 
     @MainActor
     func testCreateReportsPersistenceFailureAndRollsBack() throws {
-        struct PersistenceFailure: Error {}
-        let store = try makeTestStore(persist: { _ in throw PersistenceFailure() })
+        let gate = PersistenceGate()
+        gate.shouldFail = true
+        let store = try makeTestStore(persist: gate.save)
 
         XCTAssertNil(store.create(title: "Must not disappear"))
         XCTAssertTrue(store.tasks.isEmpty)
         XCTAssertNotNil(store.lastErrorMessage)
+    }
+
+    @MainActor
+    func testFailedEditsRestorePersistedValues() throws {
+        let gate = PersistenceGate()
+        let store = try makeTestStore(persist: gate.save)
+        let task = try XCTUnwrap(store.create(title: "Original", priority: .low))
+        gate.shouldFail = true
+
+        XCTAssertFalse(store.rename(task, to: "Changed"))
+        XCTAssertEqual(try XCTUnwrap(store.tasks.first).title, "Original")
+
+        let afterRename = try XCTUnwrap(store.tasks.first)
+        XCTAssertFalse(store.setPriority(.high, for: afterRename))
+        XCTAssertEqual(try XCTUnwrap(store.tasks.first).priority, .low)
+
+        let afterPriority = try XCTUnwrap(store.tasks.first)
+        XCTAssertFalse(store.setStatus(.done, for: afterPriority))
+        let restored = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(restored.status, .todo)
+        XCTAssertNil(restored.completedAt)
+    }
+
+    @MainActor
+    func testFailedDeleteRestoresTask() throws {
+        let gate = PersistenceGate()
+        let store = try makeTestStore(persist: gate.save)
+        let task = try XCTUnwrap(store.create(title: "Keep me"))
+        gate.shouldFail = true
+
+        XCTAssertFalse(store.delete(task))
+        XCTAssertEqual(store.tasks.map(\.title), ["Keep me"])
+    }
+
+    @MainActor
+    func testFailedReorderRestoresOriginalOrder() throws {
+        let gate = PersistenceGate()
+        let clock = MutableNow(Date(timeIntervalSince1970: 1_000))
+        let store = try makeTestStore(now: { clock.value }, persist: gate.save)
+        let first = try XCTUnwrap(store.create(title: "First", priority: .medium))
+        clock.value = Date(timeIntervalSince1970: 1_100)
+        let second = try XCTUnwrap(store.create(title: "Second", priority: .medium))
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id, first.id])
+        gate.shouldFail = true
+
+        XCTAssertFalse(store.reorder(taskID: second.id, relativeTo: first.id))
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.title), ["Second", "First"])
     }
 
     @MainActor

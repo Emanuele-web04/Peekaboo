@@ -4,20 +4,30 @@
 require 'xcodeproj'
 require 'fileutils'
 require 'optparse'
+require 'securerandom'
+require 'tmpdir'
 
 ROOT = File.expand_path('..', __dir__)
-PROJECT_PATH = File.join(ROOT, 'Peekaboo.xcodeproj')
+DEFAULT_PROJECT_PATH = File.join(ROOT, 'Peekaboo.xcodeproj')
+options = { project_path: DEFAULT_PROJECT_PATH }
 
 OptionParser.new do |parser|
-  parser.banner = 'Usage: ruby Scripts/generate_project.rb'
+  parser.banner = 'Usage: ruby Scripts/generate_project.rb [options]'
+  parser.on('--output PATH', 'Write the generated project to PATH') do |path|
+    options[:project_path] = File.expand_path(path)
+  end
   parser.on('-h', '--help', 'Show this help without changing the project') do
     puts parser
     exit
   end
 end.parse!
 
-FileUtils.rm_rf(PROJECT_PATH) if File.exist?(PROJECT_PATH)
-project = Xcodeproj::Project.new(PROJECT_PATH, false, 77)
+project_path = options.fetch(:project_path)
+FileUtils.mkdir_p(File.dirname(project_path))
+staging_directory = Dir.mktmpdir('.peekaboo-project-', File.dirname(project_path))
+at_exit { FileUtils.rm_rf(staging_directory) if File.exist?(staging_directory) }
+staged_project_path = File.join(staging_directory, File.basename(project_path))
+project = Xcodeproj::Project.new(staged_project_path, false, 77)
 project.root_object.attributes['LastSwiftUpdateCheck'] = '2660'
 project.root_object.attributes['LastUpgradeCheck'] = '2660'
 
@@ -88,14 +98,40 @@ ui_tests.build_configurations.each do |config|
   settings['TEST_TARGET_NAME'] = 'Peekaboo'
 end
 
+# xcodeproj includes the current random project/target UUIDs in proxy paths when
+# predictabilizing target dependencies. Stable placeholders remove that random
+# input; the real deterministic UUIDs are restored immediately afterwards.
+target_proxies = project.objects.grep(Xcodeproj::Project::Object::PBXContainerItemProxy)
+target_proxies.each do |proxy|
+  proxy.container_portal = 'PROJECT'
+  proxy.remote_global_id_string = 'APP_TARGET'
+end
 project.predictabilize_uuids
+target_proxies.each do |proxy|
+  proxy.container_portal = project.root_object.uuid
+  proxy.remote_global_id_string = app.uuid
+end
 
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(app)
 scheme.set_launch_target(app)
 scheme.add_test_target(unit_tests)
 scheme.add_test_target(ui_tests)
-scheme.save_as(PROJECT_PATH, 'Peekaboo', true)
+scheme.save_as(staged_project_path, 'Peekaboo', true)
 
 project.save
-puts "Generated #{PROJECT_PATH}"
+Xcodeproj::Project.open(staged_project_path)
+
+backup_path = "#{project_path}.backup-#{Process.pid}-#{SecureRandom.hex(4)}"
+FileUtils.mv(project_path, backup_path) if File.exist?(project_path)
+begin
+  FileUtils.mv(staged_project_path, project_path)
+rescue StandardError
+  FileUtils.mv(backup_path, project_path) if File.exist?(backup_path) && !File.exist?(project_path)
+  raise
+ensure
+  FileUtils.rm_rf(backup_path) if File.exist?(project_path)
+  FileUtils.rm_rf(staging_directory)
+end
+
+puts "Generated #{project_path}"

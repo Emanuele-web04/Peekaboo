@@ -18,3 +18,15 @@ final class MutableNow {
         self.value = value
     }
 }
+
+@MainActor
+final class PersistenceGate {
+    struct Failure: Error {}
+
+    var shouldFail = false
+
+    func save(_ context: ModelContext) throws {
+        if shouldFail { throw Failure() }
+        try context.save()
+    }
+}
