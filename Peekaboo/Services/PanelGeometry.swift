@@ -69,7 +69,7 @@ enum PanelGeometry {
     }
 
     static func preferredHeight(taskCount: Int, sectionCount: Int, isComposing: Bool) -> CGFloat {
-        let header: CGFloat = 84
+        let header: CGFloat = 76
         let composer: CGFloat = isComposing ? 70 : 0
         let taskGaps = max(taskCount - sectionCount, 0)
         let content: CGFloat = taskCount == 0

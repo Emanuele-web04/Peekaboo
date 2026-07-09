@@ -6,7 +6,6 @@ struct PeekPanelView: View {
     @ObservedObject var settings: AppSettings
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Namespace private var scopeNamespace
 
     var body: some View {
         VStack(spacing: 0) {
@@ -105,8 +104,8 @@ struct PeekPanelView: View {
                 scopeCapsule(scope)
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, PeekabooStyle.horizontalPadding)
-        .padding(.top, 2)
         .padding(.bottom, 8)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("task-scope-picker")
@@ -120,26 +119,23 @@ struct PeekPanelView: View {
         } label: {
             Text(scope.title)
                 .font(.system(
-                    size: 13,
-                    weight: isSelected ? .semibold : .medium,
+                    size: 10,
+                    weight: .medium,
                     design: .rounded
                 ))
-                .foregroundStyle(
-                    isSelected
-                        ? Color(nsColor: .windowBackgroundColor)
-                        : Color.secondary
+                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                .padding(.horizontal, 10)
+                .frame(height: 22)
+                .background(
+                    Color.primary.opacity(isSelected ? 0.18 : 0.035),
+                    in: Capsule(style: .continuous)
                 )
-                .frame(maxWidth: .infinity)
-                .frame(height: 30)
-                .background {
-                    if isSelected {
-                        Capsule(style: .continuous)
-                            .fill(Color.primary.opacity(0.9))
-                            .matchedGeometryEffect(id: "scope-ink", in: scopeNamespace)
-                    } else {
-                        Capsule(style: .continuous)
-                            .fill(Color.primary.opacity(0.06))
-                    }
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(
+                            Color.primary.opacity(isSelected ? 0.38 : 0),
+                            lineWidth: 0.6
+                        )
                 }
                 .contentShape(Capsule(style: .continuous))
         }
@@ -154,7 +150,7 @@ struct PeekPanelView: View {
         if reduceMotion {
             uiState.selectScope(scope)
         } else {
-            withAnimation(PeekabooMotion.spring) {
+            withAnimation(PeekabooMotion.quick) {
                 uiState.selectScope(scope)
             }
         }
