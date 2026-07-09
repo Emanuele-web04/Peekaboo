@@ -24,6 +24,7 @@
 		923CF1AC7E87B48E4B6C3B9F /* PeekabooApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935CC61863FA19E350F782B5 /* PeekabooApp.swift */; };
 		99C4C41249DAD8E8C261D14E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40085688326A223580A2607 /* AppSettings.swift */; };
 		A2F922BF94501A8110A8972F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB4D335F790340CC8EB7A07 /* SettingsView.swift */; };
+		A7E6192C0A2D4D7487C9B103 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C8163E7B2A4E62A31D9057 /* SettingsWindowController.swift */; };
 		A89306D423DF7974BA858183 /* PanelGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A48FB2FF2D0DA46AD9788B41 /* PanelGeometry.swift */; };
 		AC3058C6555D2460156720C6 /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8FA9164908CE5AEB6C744E /* TaskRowView.swift */; };
 		B0302AFD13BC76C6921FAEAB /* TaskComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CC45D7DEBF20137B22B238 /* TaskComposerView.swift */; };
@@ -96,6 +97,7 @@
 		DE8FA9164908CE5AEB6C744E /* TaskRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TaskRowView.swift; path = Views/Panel/TaskRowView.swift; sourceTree = "<group>"; };
 		EB4A99B837E34B17A8808F02 /* PeekabooUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PeekabooUITests.swift; sourceTree = "<group>"; };
 		EBB4D335F790340CC8EB7A07 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = Views/Settings/SettingsView.swift; sourceTree = "<group>"; };
+		F4C8163E7B2A4E62A31D9057 /* SettingsWindowController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsWindowController.swift; path = Window/SettingsWindowController.swift; sourceTree = "<group>"; };
 		ED8B33E9A3BE7027F20283CB /* PeekPanel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PeekPanel.swift; path = Window/PeekPanel.swift; sourceTree = "<group>"; };
 		F2904510C2F780FA1D98C06C /* TestSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
 		F92799B725663F53B81FE6A5 /* PanelGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PanelGeometryTests.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				C1498010ECA1ACC69DD285FC /* TaskStatusButton.swift */,
 				ADAAEE1CF15F4D1AFD2C5065 /* CornerPicker.swift */,
 				EBB4D335F790340CC8EB7A07 /* SettingsView.swift */,
+				F4C8163E7B2A4E62A31D9057 /* SettingsWindowController.swift */,
 				23BF8B0805E9B4DEF58DBE16 /* PanelUIState.swift */,
 				ED8B33E9A3BE7027F20283CB /* PeekPanel.swift */,
 				4DA7FE62DAD77666B1E6F879 /* PeekPanelController.swift */,
@@ -381,6 +384,7 @@
 				580FF083E45022B8406677CC /* TaskStatusButton.swift in Sources */,
 				8B2F3B626119474DE239B548 /* CornerPicker.swift in Sources */,
 				A2F922BF94501A8110A8972F /* SettingsView.swift in Sources */,
+				A7E6192C0A2D4D7487C9B103 /* SettingsWindowController.swift in Sources */,
 				BD8AF655ACAD53B529181318 /* PanelUIState.swift in Sources */,
 				E942A55BAC2BB8549BDF033F /* PeekPanel.swift in Sources */,
 				E1E91B9CB4D36748636D60BB /* PeekPanelController.swift in Sources */,

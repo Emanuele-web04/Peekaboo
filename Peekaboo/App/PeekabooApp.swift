@@ -11,12 +11,5 @@ struct PeekabooApp: App {
             MenuBarView(store: coordinator.store, coordinator: coordinator)
         }
         .menuBarExtraStyle(.menu)
-
-        Settings {
-            SettingsView(
-                settings: coordinator.settings,
-                loginItemService: coordinator.loginItemService
-            )
-        }
     }
 }

@@ -24,7 +24,9 @@ struct MenuBarView: View {
                 .foregroundStyle(.secondary)
         }
 
-        SettingsLink {
+        Button {
+            coordinator.openSettings()
+        } label: {
             Label("Settings…", systemImage: "gearshape")
         }
         .keyboardShortcut(",")

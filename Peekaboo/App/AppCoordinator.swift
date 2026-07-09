@@ -13,6 +13,7 @@ final class AppCoordinator {
 
     private let cleanupService: DailyCleanupService
     private let panelController: PeekPanelController
+    private let settingsWindowController: SettingsWindowController
     private let hoverMonitor: CornerHoverMonitor
     private let isUITesting: Bool
     private var menuNotificationTokens: [NSObjectProtocol] = []
@@ -37,13 +38,19 @@ final class AppCoordinator {
         let settings = AppSettings()
         let store = TaskStore(container: container)
         let uiState = PanelUIState()
+        let loginItemService = LoginItemService()
+        let settingsWindowController = SettingsWindowController(
+            settings: settings,
+            loginItemService: loginItemService
+        )
         let panelController = PeekPanelController(store: store, settings: settings, uiState: uiState)
 
         self.settings = settings
         self.store = store
         self.uiState = uiState
         self.panelController = panelController
-        loginItemService = LoginItemService()
+        self.loginItemService = loginItemService
+        self.settingsWindowController = settingsWindowController
         cleanupService = DailyCleanupService(store: store)
         hoverMonitor = CornerHoverMonitor(
             settings: settings,
@@ -92,21 +99,7 @@ final class AppCoordinator {
     }
 
     func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        DispatchQueue.main.async {
-            let opened = NSApp.sendAction(
-                Selector(("showSettingsWindow:")),
-                to: nil,
-                from: nil
-            )
-            if !opened {
-                NSApp.sendAction(
-                    Selector(("showPreferencesWindow:")),
-                    to: nil,
-                    from: nil
-                )
-            }
-        }
+        settingsWindowController.show()
     }
 
     private func observeMenuTracking() {
