@@ -22,7 +22,11 @@ final class PeekabooUITests: XCTestCase {
 
         let title = app.staticTexts["Ship prototype"]
         XCTAssertTrue(title.waitForExistence(timeout: 2))
-        title.doubleClick()
+        let row = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "task-row-")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 2))
+        row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).doubleClick()
         let inProgressSection = app.staticTexts["task-section-inProgress"]
         XCTAssertTrue(inProgressSection.waitForExistence(timeout: 2))
 

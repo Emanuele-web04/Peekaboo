@@ -43,12 +43,6 @@ struct TaskRowView: View {
             }
             .font(.system(size: 13, weight: task.status == .inProgress ? .medium : .regular, design: .rounded))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture(count: 2) {
-                guard !isEditing else { return }
-                store.performDoubleClickAction(task)
-            }
-            .help(progressToggleHelp)
 
             trailingAction
         }
@@ -60,6 +54,8 @@ struct TaskRowView: View {
             in: RoundedRectangle(cornerRadius: 8, style: .continuous)
         )
         .contentShape(Rectangle())
+        .onTapGesture(count: 2, perform: handleDoubleClick)
+        .help(progressToggleHelp)
         .contextMenu { taskActions }
         .onDrag {
             dragItemProvider()
@@ -82,6 +78,7 @@ struct TaskRowView: View {
             DispatchQueue.main.async { isRenameFocused = true }
         }
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("task-row-\(task.id.uuidString)")
     }
 
     private var dragPreview: some View {
@@ -199,6 +196,11 @@ struct TaskRowView: View {
 
     private func cancelRename() {
         uiState.endEditing()
+    }
+
+    private func handleDoubleClick() {
+        guard !isEditing else { return }
+        store.performDoubleClickAction(task)
     }
 
     private func copyTitle() {
