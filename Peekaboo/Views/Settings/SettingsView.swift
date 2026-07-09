@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -49,9 +50,9 @@ struct SettingsView: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Toggle(isOn: $settings.isTranslucent) {
-                    Label("Translucent panel", systemImage: "circle.lefthalf.filled")
+                    Label("Translucency", systemImage: "circle.lefthalf.filled")
                         .font(.headline)
                 }
                 Text("Let the desktop shine through the panel background.")
@@ -61,11 +62,15 @@ struct SettingsView: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Toggle(isOn: loginBinding) {
-                    Label("Launch Peekaboo at login", systemImage: "power")
+                    Label("Launch at login", systemImage: "power")
                         .font(.headline)
                 }
+
+                Text("Open Peekaboo automatically when you log in to this Mac.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 if loginItemService.requiresApproval {
                     HStack {
@@ -85,9 +90,17 @@ struct SettingsView: View {
             }
 
             Spacer(minLength: 0)
+
+            aboutFooter
         }
         .padding(28)
-        .frame(width: 520, height: 600)
+        .frame(width: 520, height: 640)
+        .onAppear {
+            loginItemService.refresh()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            loginItemService.refresh()
+        }
     }
 
     private var header: some View {
@@ -115,5 +128,23 @@ struct SettingsView: View {
             get: { loginItemService.isEnabled },
             set: { loginItemService.setEnabled($0) }
         )
+    }
+
+    private var aboutFooter: some View {
+        VStack(spacing: 7) {
+            Text("Made by Emanuele Di Pietro")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+
+            Link(destination: URL(string: "https://github.com/Emanuele-web04/Peekaboo")!) {
+                Label("Open source on GitHub", systemImage: "arrow.up.right")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tertiary)
+            .help("Open the Peekaboo repository")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 2)
     }
 }

@@ -55,39 +55,17 @@ struct PeekPanelView: View {
 
             Spacer()
 
-            Menu {
-                Button {
-                    settings.isTranslucent = true
-                } label: {
-                    if settings.isTranslucent {
-                        Label("Translucent", systemImage: "checkmark")
-                    } else {
-                        Label("Translucent", systemImage: "circle.lefthalf.filled")
-                    }
-                }
-
-                Button {
-                    settings.isTranslucent = false
-                } label: {
-                    if !settings.isTranslucent {
-                        Label("Solid", systemImage: "checkmark")
-                    } else {
-                        Label("Solid", systemImage: "square.fill")
-                    }
-                }
-            } label: {
-                Image(systemName: "gearshape")
+            SettingsLink {
+                Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 10, weight: .semibold))
                     .frame(width: 24, height: 24)
                     .background(Color.primary.opacity(0.06), in: Circle())
                     .contentShape(Circle())
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("Panel appearance")
-            .accessibilityLabel("Panel appearance")
-            .accessibilityIdentifier("appearance-menu")
+            .buttonStyle(.plain)
+            .help("Settings")
+            .accessibilityLabel("Settings")
+            .accessibilityIdentifier("settings-button")
 
             Button {
                 if uiState.isComposerPresented {
