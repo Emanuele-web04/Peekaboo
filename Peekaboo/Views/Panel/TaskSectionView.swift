@@ -11,7 +11,7 @@ struct TaskSectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 5) {
-                Text("\(status.title.lowercased()) · \(tasks.count)")
+                Text("\(status.title) · \(tasks.count)")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                     .contentTransition(.numericText())

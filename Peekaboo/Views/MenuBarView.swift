@@ -18,7 +18,7 @@ struct MenuBarView: View {
         Divider()
 
         HStack {
-            Text("Active tasks")
+            Text("Active Tasks")
             Spacer()
             Text("\(activeTaskCount)")
                 .foregroundStyle(.secondary)

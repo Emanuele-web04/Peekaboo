@@ -184,9 +184,9 @@ struct PeekPanelView: View {
         }.count
         switch uiState.selectedScope {
         case .tasks:
-            return count == 1 ? "1 active task" : "\(count) active tasks"
+            return count == 1 ? "1 Active Task" : "\(count) Active Tasks"
         case .backlog:
-            return count == 1 ? "1 idea" : "\(count) ideas"
+            return count == 1 ? "1 Idea" : "\(count) Ideas"
         }
     }
 
@@ -195,7 +195,7 @@ struct PeekPanelView: View {
     }
 
     private var newItemTitle: String {
-        uiState.selectedScope == .tasks ? "New task" : "New backlog idea"
+        uiState.selectedScope == .tasks ? "New Task" : "New Backlog Idea"
     }
 
 }
