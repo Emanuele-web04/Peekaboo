@@ -50,7 +50,7 @@ struct TaskRowView: View {
 
             trailingAction
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
         .frame(minHeight: PeekabooStyle.rowHeight)
         .padding(.horizontal, 4)
         .background(
