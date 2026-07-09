@@ -26,6 +26,14 @@ struct TaskDragPayload: Codable, Sendable, Transferable {
             return nil
         }
         let plainTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let inlineHTML = "<span>\(plainTitle.htmlEscaped)</span>"
+        provider.registerDataRepresentation(
+            forTypeIdentifier: UTType.html.identifier,
+            visibility: .all
+        ) { completion in
+            completion(Data(inlineHTML.utf8), nil)
+            return nil
+        }
         provider.registerDataRepresentation(
             forTypeIdentifier: UTType.utf8PlainText.identifier,
             visibility: .all
@@ -34,6 +42,16 @@ struct TaskDragPayload: Codable, Sendable, Transferable {
             return nil
         }
         return provider
+    }
+}
+
+private extension String {
+    var htmlEscaped: String {
+        replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#39;")
     }
 }
 
