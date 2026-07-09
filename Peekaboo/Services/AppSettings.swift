@@ -29,6 +29,8 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(isAgentAccessEnabled, forKey: Key.isAgentAccessEnabled) }
     }
 
+    @Published private(set) var cloudSyncStartupErrorMessage: String?
+
     @Published var revealDelay: Double {
         didSet {
             let clamped = Self.clamp(revealDelay, to: 0.2...2.0)
@@ -55,6 +57,7 @@ final class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        cloudSyncStartupErrorMessage = nil
         corner = ScreenCorner(rawValue: defaults.string(forKey: Key.corner) ?? "") ?? .topRight
         let storedDelay = defaults.object(forKey: Key.revealDelay) as? Double
         var resolvedDelay = storedDelay ?? 0.2
@@ -106,6 +109,10 @@ final class AppSettings: ObservableObject {
 
     func markWelcomeShown() {
         defaults.set(true, forKey: Key.hasShownWelcome)
+    }
+
+    func reportCloudSyncStartupFailure(_ message: String) {
+        cloudSyncStartupErrorMessage = message
     }
 
     private static func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {

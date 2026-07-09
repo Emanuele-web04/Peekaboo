@@ -3,14 +3,16 @@ import SwiftData
 
 @Model
 final class TaskItem {
-    @Attribute(.unique) var id: UUID
-    var title: String
-    var statusRaw: String
-    var priorityRaw: String
-    var createdAt: Date
-    var updatedAt: Date
-    var completedAt: Date?
-    var manualOrder: Int64?
+    // CloudKit can't enforce SwiftData uniqueness. UUID generation plus the
+    // TaskStore refresh deduplication keep the app-level identity stable.
+    var id: UUID = UUID()
+    var title: String = ""
+    var statusRaw: String = TaskStatus.todo.rawValue
+    var priorityRaw: String = TaskPriority.none.rawValue
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+    var completedAt: Date? = nil
+    var manualOrder: Int64? = nil
 
     init(
         id: UUID = UUID(),

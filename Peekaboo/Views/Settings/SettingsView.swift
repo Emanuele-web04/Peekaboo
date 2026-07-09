@@ -130,6 +130,24 @@ struct SettingsView: View {
                 }
             }
 
+            if let message = settings.cloudSyncStartupErrorMessage {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("iCloud sync unavailable", systemImage: "exclamationmark.icloud.fill")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                    Text("Peekaboo is using its local task store for this launch.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(3)
+                        .help(message)
+                }
+            }
+
             Spacer(minLength: 0)
 
             aboutFooter

@@ -28,17 +28,31 @@ final class AppCoordinator {
     private init() {
         let environment = ProcessInfo.processInfo.environment
         isUITesting = environment["PEEKABOO_UI_TESTING"] == "1"
-        isRunningTests = environment["XCTestConfigurationFilePath"] != nil
+        isRunningTests = environment["PEEKABOO_TESTING"] == "1"
+            || environment["XCTestConfigurationFilePath"] != nil
             || environment["XCTestBundlePath"] != nil
 
+        let settings = AppSettings()
         let container: ModelContainer
         do {
-            container = try PersistenceController.makeContainer(inMemory: isUITesting)
-        } catch {
-            fatalError("Unable to create the SwiftData container: \(error)")
+            container = try PersistenceController.makeContainer(
+                inMemory: isUITesting || isRunningTests
+            )
+        } catch let cloudError {
+            do {
+                container = try PersistenceController.makeContainer(
+                    inMemory: isUITesting || isRunningTests,
+                    cloudSyncEnabled: false
+                )
+                settings.reportCloudSyncStartupFailure(cloudError.localizedDescription)
+            } catch {
+                fatalError(
+                    "Unable to create the SwiftData container with CloudKit "
+                        + "(\(cloudError)) or local-only (\(error))"
+                )
+            }
         }
 
-        let settings = AppSettings()
         let store = TaskStore(container: container)
         let uiState = PanelUIState()
         let loginItemService = LoginItemService()

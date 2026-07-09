@@ -37,8 +37,11 @@ project.root_object.attributes['LastUpgradeCheck'] = '2660'
 app = project.new_target(:application, 'Peekaboo', :osx, '14.0')
 unit_tests = project.new_target(:unit_test_bundle, 'PeekabooTests', :osx, '14.0')
 ui_tests = project.new_target(:ui_test_bundle, 'PeekabooUITests', :osx, '14.0')
+mobile_app = project.new_target(:application, 'PeekabooMobile', :ios, '17.0')
+mobile_tests = project.new_target(:unit_test_bundle, 'PeekabooMobileTests', :ios, '17.0')
 unit_tests.add_dependency(app)
 ui_tests.add_dependency(app)
+mobile_tests.add_dependency(mobile_app)
 
 def add_swift_sources(project, target, group_name, directory)
   group = project.main_group.new_group(group_name, group_name)
@@ -53,14 +56,38 @@ end
 app_group = add_swift_sources(project, app, 'Peekaboo', 'Peekaboo')
 tests_group = add_swift_sources(project, unit_tests, 'PeekabooTests', 'PeekabooTests')
 ui_tests_group = add_swift_sources(project, ui_tests, 'PeekabooUITests', 'PeekabooUITests')
+mobile_group = add_swift_sources(project, mobile_app, 'PeekabooMobile', 'PeekabooMobile')
+mobile_tests_group = add_swift_sources(
+  project,
+  mobile_tests,
+  'PeekabooMobileTests',
+  'PeekabooMobileTests'
+)
+
+shared_mobile_sources = [
+  'Models/TaskItem.swift',
+  'Models/TaskTypes.swift',
+  'Services/PersistenceController.swift',
+  'Services/TaskStore.swift'
+]
+shared_mobile_sources.each do |path|
+  reference = app_group.files.find { |file| file.path == path }
+  abort "Missing shared source: Peekaboo/#{path}" unless reference
+
+  mobile_app.source_build_phase.add_file_reference(reference)
+end
 
 assets = app_group.new_file('Resources/Assets.xcassets')
 app.resources_build_phase.add_file_reference(assets)
+mobile_app.resources_build_phase.add_file_reference(assets)
 app_group.new_file('Peekaboo.entitlements')
 app_group.new_file('Info.plist')
+mobile_group.new_file('PeekabooMobile.entitlements')
+mobile_group.new_file('Info.plist')
 
 project.build_configurations.each do |config|
   config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '14.0'
+  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
 end
 
 app.build_configurations.each do |config|
@@ -102,26 +129,97 @@ ui_tests.build_configurations.each do |config|
   settings['TEST_TARGET_NAME'] = 'Peekaboo'
 end
 
+mobile_app.build_configurations.each do |config|
+  settings = config.build_settings
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.Peekaboo'
+  settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
+  settings['PRODUCT_MODULE_NAME'] = 'PeekabooMobile'
+  settings['GENERATE_INFOPLIST_FILE'] = 'NO'
+  settings['INFOPLIST_FILE'] = 'PeekabooMobile/Info.plist'
+  settings['CODE_SIGN_ENTITLEMENTS'] = 'PeekabooMobile/PeekabooMobile.entitlements'
+  settings['CODE_SIGN_STYLE'] = 'Automatic'
+  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'
+  settings['ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME'] = 'AccentColor'
+  settings['SWIFT_VERSION'] = '5.0'
+  settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+  settings['SWIFT_EMIT_LOC_STRINGS'] = 'YES'
+  settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+  settings['SDKROOT'] = 'iphoneos'
+  settings['SUPPORTED_PLATFORMS'] = 'iphoneos iphonesimulator'
+  settings['TARGETED_DEVICE_FAMILY'] = '1'
+  settings['SUPPORTS_MACCATALYST'] = 'NO'
+  settings['MARKETING_VERSION'] = '1.0'
+  settings['CURRENT_PROJECT_VERSION'] = '1'
+end
+
+mobile_tests.build_configurations.each do |config|
+  settings = config.build_settings
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.PeekabooMobileTests'
+  settings['GENERATE_INFOPLIST_FILE'] = 'YES'
+  settings['SWIFT_VERSION'] = '5.0'
+  settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+  settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+  settings['SDKROOT'] = 'iphoneos'
+  settings['SUPPORTED_PLATFORMS'] = 'iphoneos iphonesimulator'
+  settings['TARGETED_DEVICE_FAMILY'] = '1'
+  settings['TEST_HOST'] = '$(BUILT_PRODUCTS_DIR)/PeekabooMobile.app/PeekabooMobile'
+  settings['BUNDLE_LOADER'] = '$(TEST_HOST)'
+end
+
 # xcodeproj includes the current random project/target UUIDs in proxy paths when
 # predictabilizing target dependencies. Stable placeholders remove that random
 # input; the real deterministic UUIDs are restored immediately afterwards.
 target_proxies = project.objects.grep(Xcodeproj::Project::Object::PBXContainerItemProxy)
-target_proxies.each do |proxy|
+proxy_targets = target_proxies.to_h do |proxy|
+  target = project.targets.find { |candidate| candidate.uuid == proxy.remote_global_id_string }
+  abort "Missing target for dependency proxy #{proxy.uuid}" unless target
+
+  [proxy, target]
+end
+proxy_targets.each_with_index do |(proxy, _target), index|
   proxy.container_portal = 'PROJECT'
-  proxy.remote_global_id_string = 'APP_TARGET'
+  proxy.remote_global_id_string = "DEPENDENCY_TARGET_#{index}"
 end
 project.predictabilize_uuids
-target_proxies.each do |proxy|
+proxy_targets.each do |proxy, target|
   proxy.container_portal = project.root_object.uuid
-  proxy.remote_global_id_string = app.uuid
+  proxy.remote_global_id_string = target.uuid
 end
+
+target_attributes = project.root_object.attributes['TargetAttributes'] ||= {}
+target_attributes[app.uuid] = {
+  'SystemCapabilities' => {
+    'com.apple.iCloud' => { 'enabled' => 1 },
+    'com.apple.Push' => { 'enabled' => 1 }
+  }
+}
+target_attributes[mobile_app.uuid] = {
+  'SystemCapabilities' => {
+    'com.apple.BackgroundModes' => { 'enabled' => 1 },
+    'com.apple.iCloud' => { 'enabled' => 1 },
+    'com.apple.Push' => { 'enabled' => 1 }
+  }
+}
 
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(app)
 scheme.set_launch_target(app)
 scheme.add_test_target(unit_tests)
 scheme.add_test_target(ui_tests)
+scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([
+  { key: 'PEEKABOO_TESTING', value: '1', enabled: true }
+])
 scheme.save_as(staged_project_path, 'Peekaboo', true)
+
+mobile_scheme = Xcodeproj::XCScheme.new
+mobile_scheme.add_build_target(mobile_app)
+mobile_scheme.set_launch_target(mobile_app)
+mobile_scheme.add_test_target(mobile_tests)
+mobile_scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([
+  { key: 'PEEKABOO_TESTING', value: '1', enabled: true }
+])
+mobile_scheme.save_as(staged_project_path, 'PeekabooMobile', true)
 
 project.save
 

@@ -1,8 +1,8 @@
 # Peekaboo
 
-A tiny native macOS to-do list that stays out of the way until you need it.
+A tiny native task list for Mac and iPhone that stays out of the way until you need it.
 
-Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer rests in a chosen screen corner. It is built with SwiftUI, AppKit and SwiftData, with no account or cloud service required.
+On Mac, Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer rests in a chosen screen corner. Its iPhone companion uses the same SwiftData model and synchronizes tasks through the user's private CloudKit database.
 
 ## Demo
 
@@ -14,7 +14,8 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 - Global `Control–Option–Space` shortcut for creating a task
 - Separate Tasks and Backlog scopes, with To do, In Progress and Done states
 - None, Low, Medium and High priorities
-- Local SwiftData persistence
+- Local-first SwiftData persistence with private CloudKit sync
+- Native iPhone companion for viewing and editing the same Tasks and Backlog
 - Automatic cleanup of completed tasks after the day changes
 - Multi-display and full-screen Space support
 - Configurable reveal and hide delays
@@ -27,18 +28,32 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 ## Requirements
 
 - macOS 14 or newer
+- iOS 17 or newer for the iPhone companion
 - Xcode 16 or newer
 
 ## Build and run
 
 1. Clone the repository.
 2. Open `Peekaboo.xcodeproj` in Xcode.
-3. Select the `Peekaboo` target and choose your development team under Signing & Capabilities.
+3. Select both the `Peekaboo` and `PeekabooMobile` targets and choose your development team under Signing & Capabilities.
 4. Change the bundle identifier if your Apple developer account does not own `com.emanueledipietro.Peekaboo`.
-5. Run the app.
+5. Run the `Peekaboo` scheme for Mac or `PeekabooMobile` for iPhone.
 
 Choose a corner and reveal delay in Settings. Press `Control–Option–Space` from anywhere in macOS to reveal Peekaboo with the new-task field focused.
 Press `Command–,` while Peekaboo is focused to open Settings.
+
+## iCloud and iPhone setup
+
+Both app targets use the explicit CloudKit container `iCloud.com.emanueledipietro.Peekaboo`. Before running a device build:
+
+1. In Xcode, confirm that both targets use the same Apple development team and have iCloud/CloudKit plus remote-notification capabilities.
+2. Create or select `iCloud.com.emanueledipietro.Peekaboo` for both targets. If you change the container identifier, also update `PersistenceController.cloudKitContainerIdentifier` and both entitlement files.
+3. Sign in to the same iCloud account on the Mac and iPhone. Each app keeps a local SwiftData replica, so edits remain available offline and synchronize when CloudKit becomes available.
+4. After the first Development sync, inspect the generated `CD_TaskItem` type in CloudKit Console. Deploy the schema to Production before TestFlight, App Store or production distribution.
+
+The Mac app makes a one-time `default.store.pre-cloudkit*` backup before first attaching the existing local store to CloudKit. Completed tasks keep the existing cleanup behavior: tasks completed before the current day are deleted, and that deletion synchronizes to every device.
+
+CloudKit pushes are unreliable in Simulator, so the app also refreshes whenever it becomes active and supports pull-to-refresh on iPhone. Final sync validation still requires two real, unlocked devices on the same iCloud account. A directly distributed Mac build needs a Developer ID provisioning profile that contains the iCloud entitlement; ad-hoc signing cannot access the CloudKit container.
 
 ## Interactions
 
@@ -98,6 +113,11 @@ xcodebuild test \
   -project Peekaboo.xcodeproj \
   -scheme Peekaboo \
   -destination 'platform=macOS'
+
+xcodebuild test \
+  -project Peekaboo.xcodeproj \
+  -scheme PeekabooMobile \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 
 ## Project generation

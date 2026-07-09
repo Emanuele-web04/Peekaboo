@@ -68,6 +68,9 @@ final class DailyCleanupService {
 
     private func cleanupAndReschedule() {
         let timestamp = now()
+        // Foreground/wake refresh is a fallback for delayed or dropped
+        // CloudKit remote-change pushes.
+        store.refresh()
         performCleanup(at: timestamp)
         scheduleNextMidnight(after: timestamp)
     }
