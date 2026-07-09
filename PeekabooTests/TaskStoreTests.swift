@@ -222,6 +222,28 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testExternalDragStartsPendingTasksWithoutReopeningDoneTasks() throws {
+        let store = try makeTestStore()
+        let todo = try XCTUnwrap(store.create(title: "Todo"))
+        let backlog = try XCTUnwrap(store.create(title: "Idea", status: .backlog))
+        let inProgress = try XCTUnwrap(store.create(title: "Working", status: .inProgress))
+        let done = try XCTUnwrap(store.create(title: "Finished", status: .done))
+
+        XCTAssertTrue(store.startAfterExternalDrag(taskID: todo.id))
+        XCTAssertEqual(todo.status, .inProgress)
+
+        XCTAssertTrue(store.startAfterExternalDrag(taskID: backlog.id))
+        XCTAssertEqual(backlog.status, .inProgress)
+
+        XCTAssertTrue(store.startAfterExternalDrag(taskID: inProgress.id))
+        XCTAssertEqual(inProgress.status, .inProgress)
+
+        XCTAssertFalse(store.startAfterExternalDrag(taskID: done.id))
+        XCTAssertEqual(done.status, .done)
+        XCTAssertFalse(store.startAfterExternalDrag(taskID: UUID()))
+    }
+
+    @MainActor
     func testReorderWithinSameStatusAndPriorityPersists() throws {
         let clock = MutableNow(Date(timeIntervalSince1970: 1_000))
         let store = try makeTestStore(now: { clock.value })

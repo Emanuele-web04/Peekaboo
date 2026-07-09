@@ -65,3 +65,28 @@ final class CornerHoverStateMachineTests: XCTestCase {
         ), .hide)
     }
 }
+
+final class PanelUIStateTests: XCTestCase {
+    @MainActor
+    func testReleaseOutsideReturnsDraggedTaskOnce() {
+        let state = PanelUIState()
+        let task = TaskItem(title: "External drag")
+
+        state.beginDragging(task)
+
+        XCTAssertEqual(state.finishDragging(releasedOutsidePanel: true), task.id)
+        XCTAssertNil(state.draggedTaskID)
+        XCTAssertNil(state.finishDragging(releasedOutsidePanel: true))
+    }
+
+    @MainActor
+    func testReleaseInsideClearsDragWithoutStartingTask() {
+        let state = PanelUIState()
+        let task = TaskItem(title: "Internal drag")
+
+        state.beginDragging(task)
+
+        XCTAssertNil(state.finishDragging(releasedOutsidePanel: false))
+        XCTAssertNil(state.draggedTaskID)
+    }
+}

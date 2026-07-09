@@ -6,16 +6,23 @@ final class CornerHoverMonitor {
     private let settings: AppSettings
     private let panelController: PeekPanelController
     private let uiState: PanelUIState
+    private let store: TaskStore
 
     private var stateMachine = CornerHoverStateMachine()
     private var pollingTimer: DispatchSourceTimer?
     private var screenChangeToken: NSObjectProtocol?
     private var responsivenessActivity: NSObjectProtocol?
 
-    init(settings: AppSettings, panelController: PeekPanelController, uiState: PanelUIState) {
+    init(
+        settings: AppSettings,
+        panelController: PeekPanelController,
+        uiState: PanelUIState,
+        store: TaskStore
+    ) {
         self.settings = settings
         self.panelController = panelController
         self.uiState = uiState
+        self.store = store
     }
 
     func start() {
@@ -93,7 +100,10 @@ final class CornerHoverMonitor {
         } ?? false
         let isInPanel = panelController.visibleFrame?.contains(location) ?? false
         let isMouseButtonPressed = NSEvent.pressedMouseButtons != 0
-        if !isMouseButtonPressed { uiState.endDragging() }
+        if !isMouseButtonPressed,
+           let draggedTaskID = uiState.finishDragging(releasedOutsidePanel: !isInPanel) {
+            store.startAfterExternalDrag(taskID: draggedTaskID)
+        }
 
         let uptime = ProcessInfo.processInfo.systemUptime
         let transition = stateMachine.update(

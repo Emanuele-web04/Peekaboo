@@ -51,7 +51,8 @@ final class AppCoordinator {
         hoverMonitor = CornerHoverMonitor(
             settings: settings,
             panelController: panelController,
-            uiState: uiState
+            uiState: uiState,
+            store: store
         )
     }
 

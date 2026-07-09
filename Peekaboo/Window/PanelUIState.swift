@@ -46,4 +46,10 @@ final class PanelUIState: ObservableObject {
     func endDragging() {
         draggedTaskID = nil
     }
+
+    func finishDragging(releasedOutsidePanel: Bool) -> UUID? {
+        guard let draggedTaskID else { return nil }
+        self.draggedTaskID = nil
+        return releasedOutsidePanel ? draggedTaskID : nil
+    }
 }

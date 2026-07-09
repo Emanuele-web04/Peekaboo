@@ -171,6 +171,19 @@ final class TaskStore: ObservableObject {
     }
 
     @discardableResult
+    func startAfterExternalDrag(taskID: UUID) -> Bool {
+        guard let task = tasks.first(where: { $0.id == taskID }) else { return false }
+        switch task.status {
+        case .todo, .backlog:
+            return setStatus(.inProgress, for: task)
+        case .inProgress:
+            return true
+        case .done:
+            return false
+        }
+    }
+
+    @discardableResult
     func reorder(taskID: UUID, relativeTo targetID: UUID) -> Bool {
         guard taskID != targetID,
               let task = tasks.first(where: { $0.id == taskID }),
