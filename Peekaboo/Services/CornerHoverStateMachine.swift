@@ -19,7 +19,8 @@ struct CornerHoverStateMachine {
         isInHotspot: Bool,
         isInPanel: Bool,
         isInteractionLocked: Bool,
-        revealDelay: TimeInterval
+        revealDelay: TimeInterval,
+        hideDelay: TimeInterval = 0.3
     ) -> Transition {
         if !isVisible {
             guard isInHotspot else {
@@ -61,7 +62,7 @@ struct CornerHoverStateMachine {
             return .none
         }
 
-        guard timestamp - (leaveBeganAt ?? timestamp) >= 0.3 else { return .none }
+        guard timestamp - (leaveBeganAt ?? timestamp) >= max(0, hideDelay) else { return .none }
         reset()
         return .hide
     }

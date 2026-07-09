@@ -34,6 +34,24 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
+                    Label("Hide delay", systemImage: "eye.slash")
+                        .font(.headline)
+                    Spacer()
+                    Text(settings.hideDelay, format: .number.precision(.fractionLength(1)))
+                        .monospacedDigit()
+                    Text("sec")
+                        .foregroundStyle(.secondary)
+                }
+                Slider(value: $settings.hideDelay, in: 0.1...2.0, step: 0.1)
+                Text("Wait this long after the cursor leaves before Peekaboo hides.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
                     Label("Reveal delay", systemImage: "timer")
                         .font(.headline)
                     Spacer()
@@ -94,7 +112,7 @@ struct SettingsView: View {
             aboutFooter
         }
         .padding(28)
-        .frame(width: 520, height: 640)
+        .frame(width: 520, height: 720)
         .onAppear {
             loginItemService.refresh()
         }

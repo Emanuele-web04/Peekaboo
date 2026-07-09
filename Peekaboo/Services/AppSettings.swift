@@ -6,6 +6,7 @@ final class AppSettings: ObservableObject {
     private enum Key {
         static let corner = "selectedCorner"
         static let revealDelay = "revealDelay"
+        static let hideDelay = "hideDelay"
         static let hasAdoptedFasterReveal = "hasAdoptedFasterReveal"
         static let hasAdoptedQuickerReveal = "hasAdoptedQuickerRevealV2"
         static let hasAdoptedInstantReveal = "hasAdoptedInstantRevealV3"
@@ -28,6 +29,17 @@ final class AppSettings: ObservableObject {
                 revealDelay = clamped
             } else {
                 defaults.set(revealDelay, forKey: Key.revealDelay)
+            }
+        }
+    }
+
+    @Published var hideDelay: Double {
+        didSet {
+            let clamped = min(max(hideDelay, 0.1), 2.0)
+            if hideDelay != clamped {
+                hideDelay = clamped
+            } else {
+                defaults.set(hideDelay, forKey: Key.hideDelay)
             }
         }
     }
@@ -61,6 +73,8 @@ final class AppSettings: ObservableObject {
             defaults.set(true, forKey: Key.hasAdoptedInstantReveal)
         }
         revealDelay = min(max(resolvedDelay, 0.2), 2.0)
+        let storedHideDelay = defaults.object(forKey: Key.hideDelay) as? Double
+        hideDelay = min(max(storedHideDelay ?? 0.3, 0.1), 2.0)
         isTranslucent = (defaults.object(forKey: Key.isTranslucent) as? Bool) ?? true
     }
 
