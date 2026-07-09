@@ -8,6 +8,7 @@ final class AppSettings: ObservableObject {
         static let revealDelay = "revealDelay"
         static let hasAdoptedFasterReveal = "hasAdoptedFasterReveal"
         static let hasAdoptedQuickerReveal = "hasAdoptedQuickerRevealV2"
+        static let hasAdoptedInstantReveal = "hasAdoptedInstantRevealV3"
         static let hasShownWelcome = "hasShownWelcome"
         static let isTranslucent = "isTranslucent"
     }
@@ -37,7 +38,7 @@ final class AppSettings: ObservableObject {
         self.defaults = defaults
         corner = ScreenCorner(rawValue: defaults.string(forKey: Key.corner) ?? "") ?? .topRight
         let storedDelay = defaults.object(forKey: Key.revealDelay) as? Double
-        var resolvedDelay = storedDelay ?? 0.3
+        var resolvedDelay = storedDelay ?? 0.2
         if !defaults.bool(forKey: Key.hasAdoptedFasterReveal) {
             if abs(resolvedDelay - 0.5) < 0.001 {
                 resolvedDelay = 0.4
@@ -51,6 +52,13 @@ final class AppSettings: ObservableObject {
                 defaults.set(resolvedDelay, forKey: Key.revealDelay)
             }
             defaults.set(true, forKey: Key.hasAdoptedQuickerReveal)
+        }
+        if !defaults.bool(forKey: Key.hasAdoptedInstantReveal) {
+            if storedDelay == nil || abs(resolvedDelay - 0.3) < 0.001 {
+                resolvedDelay = 0.2
+                defaults.set(resolvedDelay, forKey: Key.revealDelay)
+            }
+            defaults.set(true, forKey: Key.hasAdoptedInstantReveal)
         }
         revealDelay = min(max(resolvedDelay, 0.2), 2.0)
         isTranslucent = (defaults.object(forKey: Key.isTranslucent) as? Bool) ?? true
