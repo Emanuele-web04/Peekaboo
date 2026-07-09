@@ -44,55 +44,50 @@ struct PeekPanelView: View {
     }
 
     private var header: some View {
-        ZStack {
-            HStack(spacing: 8) {
-                Text("Peekaboo")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                Text("· \(activeSubtitle)")
-                    .font(.system(size: 10, design: .rounded))
-                    .foregroundStyle(.tertiary)
-                    .contentTransition(.numericText())
-                    .animation(reduceMotion ? nil : PeekabooMotion.quick, value: activeSubtitle)
+        HStack(spacing: 8) {
+            Text("Peekaboo")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+            Text("· \(activeSubtitle)")
+                .font(.system(size: 10, design: .rounded))
+                .foregroundStyle(.tertiary)
+                .contentTransition(.numericText())
+                .animation(reduceMotion ? nil : PeekabooMotion.quick, value: activeSubtitle)
+
+            Spacer()
+
+            Button {
+                AppCoordinator.shared.openSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 24, height: 24)
+                    .background(Color.primary.opacity(0.06), in: Circle())
+                    .contentShape(Circle())
             }
-            .lineLimit(1)
+            .buttonStyle(.plain)
+            .keyboardShortcut(",", modifiers: .command)
+            .help("Settings")
+            .accessibilityLabel("Settings")
+            .accessibilityIdentifier("settings-button")
 
-            HStack(spacing: 8) {
-                Spacer()
-
-                Button {
-                    AppCoordinator.shared.openSettings()
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 10, weight: .semibold))
-                        .frame(width: 24, height: 24)
-                        .background(Color.primary.opacity(0.06), in: Circle())
-                        .contentShape(Circle())
+            Button {
+                if uiState.isComposerPresented {
+                    uiState.endAdding()
+                } else {
+                    uiState.beginAdding()
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut(",", modifiers: .command)
-                .help("Settings")
-                .accessibilityLabel("Settings")
-                .accessibilityIdentifier("settings-button")
-
-                Button {
-                    if uiState.isComposerPresented {
-                        uiState.endAdding()
-                    } else {
-                        uiState.beginAdding()
-                    }
-                } label: {
-                    Image(systemName: uiState.isComposerPresented ? "xmark" : "plus")
-                        .font(.system(size: 10, weight: .semibold))
-                        .frame(width: 24, height: 24)
-                        .background(Color.primary.opacity(0.06), in: Circle())
-                        .contentShape(Circle())
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .buttonStyle(.plain)
-                .help(uiState.isComposerPresented ? "Cancel" : newItemTitle)
-                .accessibilityLabel(uiState.isComposerPresented ? "Cancel" : newItemTitle)
-                .accessibilityIdentifier("add-task-button")
+            } label: {
+                Image(systemName: uiState.isComposerPresented ? "xmark" : "plus")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 24, height: 24)
+                    .background(Color.primary.opacity(0.06), in: Circle())
+                    .contentShape(Circle())
+                    .contentTransition(.symbolEffect(.replace))
             }
+            .buttonStyle(.plain)
+            .help(uiState.isComposerPresented ? "Cancel" : newItemTitle)
+            .accessibilityLabel(uiState.isComposerPresented ? "Cancel" : newItemTitle)
+            .accessibilityIdentifier("add-task-button")
         }
         .padding(.horizontal, PeekabooStyle.horizontalPadding)
         .frame(height: 44)
