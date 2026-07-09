@@ -1,39 +1,14 @@
 import AppKit
-import CoreTransferable
 import Foundation
 import UniformTypeIdentifiers
 
-struct TaskDragPayload: Codable, Sendable, Transferable {
+struct TaskDragPayload: Sendable {
     let id: UUID
     let title: String
 
-    static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .peekabooTask)
-        ProxyRepresentation(exporting: \.title)
-    }
-
     func itemProvider() -> NSItemProvider {
         let provider = NSItemProvider()
-        provider.registerDataRepresentation(
-            forTypeIdentifier: UTType.peekabooTask.identifier,
-            visibility: .ownProcess
-        ) { completion in
-            do {
-                completion(try JSONEncoder().encode(self), nil)
-            } catch {
-                completion(nil, error)
-            }
-            return nil
-        }
         let plainTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let inlineHTML = "<span>\(plainTitle.htmlEscaped)</span>"
-        provider.registerDataRepresentation(
-            forTypeIdentifier: UTType.html.identifier,
-            visibility: .all
-        ) { completion in
-            completion(Data(inlineHTML.utf8), nil)
-            return nil
-        }
         provider.registerDataRepresentation(
             forTypeIdentifier: UTType.utf8PlainText.identifier,
             visibility: .all
@@ -43,20 +18,6 @@ struct TaskDragPayload: Codable, Sendable, Transferable {
         }
         return provider
     }
-}
-
-private extension String {
-    var htmlEscaped: String {
-        replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
-    }
-}
-
-extension UTType {
-    static let peekabooTask = UTType(exportedAs: "com.emanueledipietro.peekaboo.task")
 }
 
 enum TaskStatus: String, Codable, CaseIterable, Identifiable {

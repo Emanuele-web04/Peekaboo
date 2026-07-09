@@ -7,7 +7,6 @@ final class TaskStoreTests: XCTestCase {
         let payload = TaskDragPayload(id: UUID(), title: "Paste me")
         let provider = payload.itemProvider()
 
-        XCTAssertTrue(provider.hasItemConformingToTypeIdentifier(UTType.peekabooTask.identifier))
         XCTAssertTrue(provider.hasItemConformingToTypeIdentifier(UTType.text.identifier))
 
         let plainTextLoaded = expectation(description: "Plain-text drag representation loads")
@@ -18,11 +17,6 @@ final class TaskStoreTests: XCTestCase {
         }
         wait(for: [plainTextLoaded], timeout: 1)
 
-        guard #available(macOS 15.2, *) else { return }
-        let contentTypes = TaskDragPayload.exportedContentTypes(visibility: .all)
-
-        XCTAssertTrue(contentTypes.contains(.peekabooTask))
-        XCTAssertTrue(contentTypes.contains { $0.conforms(to: .text) })
     }
 
     @MainActor

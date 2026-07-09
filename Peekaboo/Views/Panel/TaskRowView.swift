@@ -66,7 +66,7 @@ struct TaskRowView: View {
         } preview: {
             dragPreview
         }
-        .onDrop(of: [.peekabooTask], isTargeted: nil) { providers, _ in
+        .onDrop(of: [.utf8PlainText], isTargeted: nil) { providers, _ in
             acceptDrop(from: providers)
         }
         .onHover { hovering in
@@ -104,26 +104,14 @@ struct TaskRowView: View {
     }
 
     private func acceptDrop(from providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first(where: {
-            $0.hasItemConformingToTypeIdentifier(UTType.peekabooTask.identifier)
-        }) else {
+        guard providers.contains(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.utf8PlainText.identifier)
+        }), let draggedTaskID = uiState.draggedTaskID else {
             return false
         }
 
-        if let draggedTaskID = uiState.draggedTaskID {
-            uiState.endDragging()
-            return store.reorder(taskID: draggedTaskID, relativeTo: task.id)
-        }
-
-        provider.loadDataRepresentation(forTypeIdentifier: UTType.peekabooTask.identifier) { data, _ in
-            guard let data, let payload = try? JSONDecoder().decode(TaskDragPayload.self, from: data) else {
-                return
-            }
-            Task { @MainActor in
-                store.reorder(taskID: payload.id, relativeTo: task.id)
-            }
-        }
-        return true
+        uiState.endDragging()
+        return store.reorder(taskID: draggedTaskID, relativeTo: task.id)
     }
 
     @ViewBuilder
