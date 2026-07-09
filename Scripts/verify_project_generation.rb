@@ -22,7 +22,8 @@ end
 def digest(project_path)
   files = [
     File.join(project_path, 'project.pbxproj'),
-    File.join(project_path, 'xcshareddata/xcschemes/Peekaboo.xcscheme')
+    File.join(project_path, 'xcshareddata/xcschemes/Peekaboo.xcscheme'),
+    File.join(project_path, 'xcshareddata/xcschemes/PeekabooMobile.xcscheme')
   ]
   Digest::SHA256.hexdigest(files.map { |path| File.binread(path) }.join)
 end

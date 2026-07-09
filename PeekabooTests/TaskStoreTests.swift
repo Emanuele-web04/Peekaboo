@@ -1,8 +1,23 @@
 import XCTest
+import SwiftData
 import UniformTypeIdentifiers
 @testable import Peekaboo
 
 final class TaskStoreTests: XCTestCase {
+    @MainActor
+    func testAgentAccessRequiresExplicitOptInOnlyOnce() {
+        let suiteName = "PeekabooTests.AgentAccess.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let initialSettings = AppSettings(defaults: defaults)
+        XCTAssertFalse(initialSettings.isAgentAccessEnabled)
+
+        initialSettings.isAgentAccessEnabled = true
+        let reloadedSettings = AppSettings(defaults: defaults)
+        XCTAssertTrue(reloadedSettings.isAgentAccessEnabled)
+    }
+
     func testTaskDragPayloadExportsInternalDataAndPlainText() {
         let payload = TaskDragPayload(title: "Paste me")
         let provider = payload.itemProvider()
@@ -44,6 +59,130 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testRefreshSeesChangesSavedByAnotherModelContext() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let store = TaskStore(container: container)
+        let externalContext = ModelContext(container)
+        let externalTask = TaskItem(title: "Created elsewhere", priority: .low)
+
+        externalContext.insert(externalTask)
+        try externalContext.save()
+        store.refresh()
+
+        let imported = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(imported.id, externalTask.id)
+        XCTAssertEqual(imported.title, "Created elsewhere")
+
+        externalTask.title = "Updated elsewhere"
+        externalTask.updatedAt = Date(timeIntervalSince1970: 2_000)
+        try externalContext.save()
+        store.refresh()
+
+        XCTAssertEqual(try XCTUnwrap(store.tasks.first).title, "Updated elsewhere")
+    }
+
+    @MainActor
+    func testRefreshDeduplicatesCloudKitCompatibleApplicationIDs() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let sharedID = UUID()
+        let older = TaskItem(
+            id: sharedID,
+            title: "Older",
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        let newer = TaskItem(
+            id: sharedID,
+            title: "Newer",
+            updatedAt: Date(timeIntervalSince1970: 2_000)
+        )
+        context.insert(older)
+        context.insert(newer)
+        try context.save()
+
+        let store = TaskStore(container: container)
+
+        XCTAssertEqual(store.tasks.count, 1)
+        XCTAssertEqual(store.tasks.first?.title, "Newer")
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 1)
+    }
+
+    @MainActor
+    func testEqualTimestampDuplicatesAreHiddenWithoutCrossDeviceDeletion() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let sharedID = UUID()
+        let timestamp = Date(timeIntervalSince1970: 2_000)
+        context.insert(TaskItem(id: sharedID, title: "Alpha", updatedAt: timestamp))
+        context.insert(TaskItem(id: sharedID, title: "Beta", updatedAt: timestamp))
+        try context.save()
+
+        let store = TaskStore(container: container)
+
+        XCTAssertEqual(store.tasks.map(\.title), ["Beta"])
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
+        store.refresh()
+        XCTAssertEqual(store.tasks.map(\.title), ["Beta"])
+    }
+
+    @MainActor
+    func testRemoteDeletionMakesCapturedTaskReferencesNoOps() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let store = TaskStore(container: container)
+        let capturedTask = try XCTUnwrap(store.create(title: "Deleted elsewhere"))
+        let externalContext = ModelContext(container)
+        let externalTask = try XCTUnwrap(
+            try externalContext.fetch(FetchDescriptor<TaskItem>()).first
+        )
+        externalContext.delete(externalTask)
+        try externalContext.save()
+        store.refresh()
+
+        XCTAssertTrue(store.tasks.isEmpty)
+        XCTAssertFalse(store.update(capturedTask, title: "Resurrected"))
+        XCTAssertFalse(store.delete(capturedTask))
+        XCTAssertFalse(store.performPrimaryAction(capturedTask))
+    }
+
+    @MainActor
+    func testFailedDeduplicationRollsBackAndCanRetry() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let sharedID = UUID()
+        context.insert(TaskItem(id: sharedID, title: "Older"))
+        context.insert(TaskItem(id: sharedID, title: "Newer", updatedAt: Date().addingTimeInterval(1)))
+        try context.save()
+
+        let gate = PersistenceGate()
+        gate.shouldFail = true
+        let store = TaskStore(container: container, persist: gate.save)
+
+        XCTAssertTrue(store.tasks.isEmpty)
+        XCTAssertNotNil(store.lastErrorMessage)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
+
+        gate.shouldFail = false
+        store.refresh()
+
+        XCTAssertEqual(store.tasks.count, 1)
+        XCTAssertNil(store.lastErrorMessage)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 1)
+    }
+
+    func testCloudConfigurationPreservesLegacyStoreLocation() {
+        let legacy = ModelConfiguration(isStoredInMemoryOnly: false)
+        let cloud = PersistenceController.makeConfiguration()
+        let inMemory = PersistenceController.makeConfiguration(inMemory: true)
+
+        XCTAssertEqual(cloud.url, legacy.url)
+        XCTAssertEqual(
+            cloud.cloudKitContainerIdentifier,
+            PersistenceController.cloudKitContainerIdentifier
+        )
+        XCTAssertNil(inMemory.cloudKitContainerIdentifier)
+    }
+
+    @MainActor
     func testFailedEditsRestorePersistedValues() throws {
         let gate = PersistenceGate()
         let store = try makeTestStore(persist: gate.save)
@@ -60,6 +199,22 @@ final class TaskStoreTests: XCTestCase {
         let afterPriority = try XCTUnwrap(store.tasks.first)
         XCTAssertFalse(store.setStatus(.done, for: afterPriority))
         let restored = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(restored.status, .todo)
+        XCTAssertNil(restored.completedAt)
+    }
+
+    @MainActor
+    func testAtomicUpdateRollsBackEveryFieldOnPersistenceFailure() throws {
+        let gate = PersistenceGate()
+        let store = try makeTestStore(persist: gate.save)
+        let task = try XCTUnwrap(store.create(title: "Original", priority: .low))
+        gate.shouldFail = true
+
+        XCTAssertFalse(store.update(task, title: "Changed", priority: .high, status: .done))
+
+        let restored = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(restored.title, "Original")
+        XCTAssertEqual(restored.priority, .low)
         XCTAssertEqual(restored.status, .todo)
         XCTAssertNil(restored.completedAt)
     }

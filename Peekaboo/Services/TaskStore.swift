@@ -1,4 +1,5 @@
 import Combine
+import CoreData
 import Foundation
 import SwiftData
 
@@ -24,6 +25,7 @@ final class TaskStore: ObservableObject {
     private let context: ModelContext
     private let now: () -> Date
     private let persist: (ModelContext) throws -> Void
+    private var remoteChangeObservation: AnyCancellable?
 
     init(
         container: ModelContainer,
@@ -34,6 +36,7 @@ final class TaskStore: ObservableObject {
         self.now = now
         self.persist = persist
         refresh()
+        observeRemoteChanges()
     }
 
     @discardableResult
@@ -61,58 +64,89 @@ final class TaskStore: ObservableObject {
 
     @discardableResult
     func rename(_ task: TaskItem, to title: String) -> Bool {
-        let normalizedTitle = Self.normalized(title)
-        guard !normalizedTitle.isEmpty else { return false }
-        guard task.title != normalizedTitle else { return true }
-        task.title = normalizedTitle
-        task.updatedAt = now()
-        return save()
+        update(task, title: title)
     }
 
     @discardableResult
     func setPriority(_ priority: TaskPriority, for task: TaskItem) -> Bool {
-        guard task.priority != priority else { return true }
-        task.manualOrder = nextManualOrder(status: task.status, priority: priority, excluding: task.id)
-        task.priority = priority
-        task.updatedAt = now()
-        return save()
+        update(task, priority: priority)
     }
 
     @discardableResult
     func setStatus(_ status: TaskStatus, for task: TaskItem) -> Bool {
-        guard task.status != status else { return true }
-        task.manualOrder = nextManualOrder(status: status, priority: task.priority, excluding: task.id)
-        task.status = status
-        task.updatedAt = now()
-        task.completedAt = status == .done ? now() : nil
+        update(task, status: status)
+    }
+
+    /// Applies a task edit as one SwiftData transaction so callers never see
+    /// a partially persisted title, priority, or status change.
+    @discardableResult
+    func update(
+        _ task: TaskItem,
+        title: String? = nil,
+        priority: TaskPriority? = nil,
+        status: TaskStatus? = nil
+    ) -> Bool {
+        guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
+        let normalizedTitle = title.map(Self.normalized)
+        if let normalizedTitle, normalizedTitle.isEmpty { return false }
+
+        let destinationPriority = priority ?? task.priority
+        let destinationStatus = status ?? task.status
+        let titleChanged = normalizedTitle.map { $0 != task.title } ?? false
+        let priorityChanged = destinationPriority != task.priority
+        let statusChanged = destinationStatus != task.status
+        guard titleChanged || priorityChanged || statusChanged else { return true }
+
+        let timestamp = now()
+        if priorityChanged || statusChanged {
+            task.manualOrder = nextManualOrder(
+                status: destinationStatus,
+                priority: destinationPriority,
+                excluding: task.id
+            )
+        }
+        if let normalizedTitle {
+            task.title = normalizedTitle
+        }
+        task.priority = destinationPriority
+        task.status = destinationStatus
+        task.updatedAt = timestamp
+        if statusChanged {
+            task.completedAt = destinationStatus == .done ? timestamp : nil
+        }
         return save()
     }
 
     @discardableResult
     func advanceToInProgress(_ task: TaskItem) -> Bool {
+        guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
         guard task.status == .todo else { return false }
         return setStatus(.inProgress, for: task)
     }
 
     @discardableResult
     func performDoubleClickAction(_ task: TaskItem) -> Bool {
+        guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
         guard let destination = task.status.doubleClickDestination else { return false }
         return setStatus(destination, for: task)
     }
 
     @discardableResult
     func markDone(_ task: TaskItem) -> Bool {
+        guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
         guard task.status != .done else { return true }
         return setStatus(.done, for: task)
     }
 
     @discardableResult
     func performPrimaryAction(_ task: TaskItem) -> Bool {
-        setStatus(task.status.primaryActionDestination, for: task)
+        guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
+        return setStatus(task.status.primaryActionDestination, for: task)
     }
 
     @discardableResult
     func delete(_ task: TaskItem) -> Bool {
+        guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
         context.delete(task)
         tasks.removeAll { $0.id == task.id }
         return save()
@@ -239,8 +273,60 @@ final class TaskStore: ObservableObject {
     }
 
     private func reloadTasks() throws {
-        tasks = try context.fetch(FetchDescriptor<TaskItem>())
+        let fetched = try context.fetch(FetchDescriptor<TaskItem>())
+        tasks = try deduplicated(fetched)
         revision &+= 1
+    }
+
+    /// CloudKit can't enforce a unique UUID attribute. If a malformed import
+    /// ever produces duplicates, retain the newest app-level record. Exact
+    /// timestamp ties stay in the store: deleting an arbitrary physical copy
+    /// on each device could sync two opposing deletions and lose both.
+    private func deduplicated(_ fetched: [TaskItem]) throws -> [TaskItem] {
+        var newestByID: [UUID: TaskItem] = [:]
+        var strictlyOlderDuplicates: [TaskItem] = []
+
+        for task in fetched {
+            guard let existing = newestByID[task.id] else {
+                newestByID[task.id] = task
+                continue
+            }
+
+            if task.updatedAt > existing.updatedAt {
+                newestByID[task.id] = task
+                strictlyOlderDuplicates.append(existing)
+            } else if task.updatedAt < existing.updatedAt {
+                strictlyOlderDuplicates.append(task)
+            } else if Self.tieBreakKey(for: task) > Self.tieBreakKey(for: existing) {
+                // Select the same visible value on every device, but leave both
+                // physical records intact until a real edit makes one newer.
+                newestByID[task.id] = task
+            }
+        }
+
+        if !strictlyOlderDuplicates.isEmpty {
+            strictlyOlderDuplicates.forEach(context.delete)
+            do {
+                try persist(context)
+            } catch {
+                context.rollback()
+                throw error
+            }
+        }
+
+        return fetched.filter { task in
+            newestByID[task.id] === task
+        }
+    }
+
+    private func observeRemoteChanges() {
+        remoteChangeObservation = NotificationCenter.default.publisher(
+            for: .NSPersistentStoreRemoteChange
+        )
+        .debounce(for: .milliseconds(200), scheduler: DispatchQueue.main)
+        .sink { [weak self] _ in
+            self?.refresh()
+        }
     }
 
     private func nextManualOrder(
@@ -268,5 +354,16 @@ final class TaskStore: ObservableObject {
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+    }
+
+    private static func tieBreakKey(for task: TaskItem) -> String {
+        [
+            task.title,
+            task.statusRaw,
+            task.priorityRaw,
+            String(task.createdAt.timeIntervalSinceReferenceDate.bitPattern),
+            task.completedAt.map { String($0.timeIntervalSinceReferenceDate.bitPattern) } ?? "",
+            task.manualOrder.map(String.init) ?? ""
+        ].joined(separator: "\u{1F}")
     }
 }

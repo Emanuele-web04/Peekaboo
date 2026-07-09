@@ -14,6 +14,7 @@ final class AppSettings: ObservableObject {
         static let isTranslucent = "isTranslucent"
         static let isAgentAccessEnabled = "isAgentAccessEnabled"
         static let agentServerPort = "agentServerPort"
+        static let hasAdoptedAgentAccessOptIn = "hasAdoptedAgentAccessOptIn"
     }
 
     @Published var corner: ScreenCorner {
@@ -27,6 +28,8 @@ final class AppSettings: ObservableObject {
     @Published var isAgentAccessEnabled: Bool {
         didSet { defaults.set(isAgentAccessEnabled, forKey: Key.isAgentAccessEnabled) }
     }
+
+    @Published private(set) var cloudSyncStartupErrorMessage: String?
 
     @Published var revealDelay: Double {
         didSet {
@@ -54,6 +57,7 @@ final class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        cloudSyncStartupErrorMessage = nil
         corner = ScreenCorner(rawValue: defaults.string(forKey: Key.corner) ?? "") ?? .topRight
         let storedDelay = defaults.object(forKey: Key.revealDelay) as? Double
         var resolvedDelay = storedDelay ?? 0.2
@@ -82,7 +86,13 @@ final class AppSettings: ObservableObject {
         let storedHideDelay = defaults.object(forKey: Key.hideDelay) as? Double
         hideDelay = Self.clamp(storedHideDelay ?? 0.3, to: 0.1...2.0)
         isTranslucent = (defaults.object(forKey: Key.isTranslucent) as? Bool) ?? true
-        isAgentAccessEnabled = (defaults.object(forKey: Key.isAgentAccessEnabled) as? Bool) ?? true
+        if !defaults.bool(forKey: Key.hasAdoptedAgentAccessOptIn) {
+            // Earlier MCP builds enabled the mutating local server implicitly.
+            // Require one explicit opt-in from every existing installation.
+            defaults.set(false, forKey: Key.isAgentAccessEnabled)
+            defaults.set(true, forKey: Key.hasAdoptedAgentAccessOptIn)
+        }
+        isAgentAccessEnabled = (defaults.object(forKey: Key.isAgentAccessEnabled) as? Bool) ?? false
     }
 
     var agentServerPort: UInt16 {
@@ -99,6 +109,10 @@ final class AppSettings: ObservableObject {
 
     func markWelcomeShown() {
         defaults.set(true, forKey: Key.hasShownWelcome)
+    }
+
+    func reportCloudSyncStartupFailure(_ message: String) {
+        cloudSyncStartupErrorMessage = message
     }
 
     private static func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {

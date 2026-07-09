@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var loginItemService: LoginItemService
+    @ObservedObject var agentServer: AgentServer
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -115,15 +116,35 @@ struct SettingsView: View {
                         .font(.headline)
                 }
 
-                Text("Let AI agents on this Mac read and update your tasks over MCP.")
+                Text("Allow local AI agents to read, create, update and permanently delete tasks over MCP.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 if settings.isAgentAccessEnabled {
+                    agentServerStatus
+
                     Text(verbatim: "http://127.0.0.1:\(settings.agentServerPort)/mcp")
                         .font(.caption.monospaced())
                         .foregroundStyle(.tertiary)
                         .textSelection(.enabled)
+                }
+            }
+
+            if let message = settings.cloudSyncStartupErrorMessage {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("iCloud sync unavailable", systemImage: "exclamationmark.icloud.fill")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                    Text("Peekaboo is using its local task store for this launch.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(3)
+                        .help(message)
                 }
             }
 
@@ -166,6 +187,32 @@ struct SettingsView: View {
             get: { loginItemService.isEnabled },
             set: { loginItemService.setEnabled($0) }
         )
+    }
+
+    @ViewBuilder
+    private var agentServerStatus: some View {
+        switch agentServer.state {
+        case .stopped:
+            Label("Server stopped", systemImage: "circle")
+                .foregroundStyle(.secondary)
+        case .starting:
+            Label("Starting local server…", systemImage: "circle.dotted")
+                .foregroundStyle(.secondary)
+        case .running:
+            Label("Listening on this Mac only", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case let .failed(message):
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Could not start the server", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Retry") { agentServer.start() }
+                    .buttonStyle(.link)
+            }
+        }
     }
 
     private var aboutFooter: some View {

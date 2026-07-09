@@ -17,6 +17,7 @@ final class AppCoordinator {
     private let hoverMonitor: CornerHoverMonitor
     private let agentServer: AgentServer
     private let isUITesting: Bool
+    private let isRunningTests: Bool
     private var menuNotificationTokens: [NSObjectProtocol] = []
     private var agentAccessObservation: AnyCancellable?
     private var hasStarted = false
@@ -25,22 +26,44 @@ final class AppCoordinator {
     }
 
     private init() {
-        isUITesting = ProcessInfo.processInfo.environment["PEEKABOO_UI_TESTING"] == "1"
-
-        let container: ModelContainer
-        do {
-            container = try PersistenceController.makeContainer(inMemory: isUITesting)
-        } catch {
-            fatalError("Unable to create the SwiftData container: \(error)")
-        }
+        let environment = ProcessInfo.processInfo.environment
+        isUITesting = environment["PEEKABOO_UI_TESTING"] == "1"
+        isRunningTests = environment["PEEKABOO_TESTING"] == "1"
+            || environment["XCTestConfigurationFilePath"] != nil
+            || environment["XCTestBundlePath"] != nil
 
         let settings = AppSettings()
+        let container: ModelContainer
+        do {
+            container = try PersistenceController.makeContainer(
+                inMemory: isUITesting || isRunningTests
+            )
+        } catch let cloudError {
+            do {
+                container = try PersistenceController.makeContainer(
+                    inMemory: isUITesting || isRunningTests,
+                    cloudSyncEnabled: false
+                )
+                settings.reportCloudSyncStartupFailure(cloudError.localizedDescription)
+            } catch {
+                fatalError(
+                    "Unable to create the SwiftData container with CloudKit "
+                        + "(\(cloudError)) or local-only (\(error))"
+                )
+            }
+        }
+
         let store = TaskStore(container: container)
         let uiState = PanelUIState()
         let loginItemService = LoginItemService()
+        let agentServer = AgentServer(
+            port: settings.agentServerPort,
+            handler: MCPRequestHandler(tools: AgentTaskTools(store: store))
+        )
         let settingsWindowController = SettingsWindowController(
             settings: settings,
-            loginItemService: loginItemService
+            loginItemService: loginItemService,
+            agentServer: agentServer
         )
         let panelController = PeekPanelController(store: store, settings: settings, uiState: uiState)
 
@@ -50,10 +73,7 @@ final class AppCoordinator {
         self.panelController = panelController
         self.loginItemService = loginItemService
         self.settingsWindowController = settingsWindowController
-        agentServer = AgentServer(
-            port: settings.agentServerPort,
-            handler: MCPRequestHandler(tools: AgentTaskTools(store: store))
-        )
+        self.agentServer = agentServer
         cleanupService = DailyCleanupService(store: store)
         hoverMonitor = CornerHoverMonitor(
             settings: settings,
@@ -77,8 +97,10 @@ final class AppCoordinator {
 
         newTaskHotKey.register()
         hoverMonitor.start()
-        agentAccessObservation = settings.$isAgentAccessEnabled.sink { [weak self] isEnabled in
-            isEnabled ? self?.agentServer.start() : self?.agentServer.stop()
+        if !isRunningTests {
+            agentAccessObservation = settings.$isAgentAccessEnabled.sink { [weak self] isEnabled in
+                isEnabled ? self?.agentServer.start() : self?.agentServer.stop()
+            }
         }
         if !settings.hasShownWelcome {
             settings.markWelcomeShown()
