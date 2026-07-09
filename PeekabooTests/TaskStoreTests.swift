@@ -11,9 +11,9 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertTrue(provider.hasItemConformingToTypeIdentifier(UTType.text.identifier))
 
         let plainTextLoaded = expectation(description: "Plain-text drag representation loads")
-        provider.loadObject(ofClass: NSString.self) { object, error in
+        provider.loadDataRepresentation(forTypeIdentifier: UTType.utf8PlainText.identifier) { data, error in
             XCTAssertNil(error)
-            XCTAssertEqual(object as? String, "Paste me")
+            XCTAssertEqual(data, Data("Paste me".utf8))
             plainTextLoaded.fulfill()
         }
         wait(for: [plainTextLoaded], timeout: 1)

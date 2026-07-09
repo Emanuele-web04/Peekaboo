@@ -13,7 +13,7 @@ struct TaskDragPayload: Codable, Sendable, Transferable {
     }
 
     func itemProvider() -> NSItemProvider {
-        let provider = NSItemProvider(object: title as NSString)
+        let provider = NSItemProvider()
         provider.registerDataRepresentation(
             forTypeIdentifier: UTType.peekabooTask.identifier,
             visibility: .ownProcess
@@ -23,6 +23,14 @@ struct TaskDragPayload: Codable, Sendable, Transferable {
             } catch {
                 completion(nil, error)
             }
+            return nil
+        }
+        let plainTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        provider.registerDataRepresentation(
+            forTypeIdentifier: UTType.utf8PlainText.identifier,
+            visibility: .all
+        ) { completion in
+            completion(Data(plainTitle.utf8), nil)
             return nil
         }
         return provider
