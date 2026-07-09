@@ -12,6 +12,8 @@ final class AppSettings: ObservableObject {
         static let hasAdoptedInstantReveal = "hasAdoptedInstantRevealV3"
         static let hasShownWelcome = "hasShownWelcome"
         static let isTranslucent = "isTranslucent"
+        static let isAgentAccessEnabled = "isAgentAccessEnabled"
+        static let agentServerPort = "agentServerPort"
     }
 
     @Published var corner: ScreenCorner {
@@ -20,6 +22,10 @@ final class AppSettings: ObservableObject {
 
     @Published var isTranslucent: Bool {
         didSet { defaults.set(isTranslucent, forKey: Key.isTranslucent) }
+    }
+
+    @Published var isAgentAccessEnabled: Bool {
+        didSet { defaults.set(isAgentAccessEnabled, forKey: Key.isAgentAccessEnabled) }
     }
 
     @Published var revealDelay: Double {
@@ -76,6 +82,15 @@ final class AppSettings: ObservableObject {
         let storedHideDelay = defaults.object(forKey: Key.hideDelay) as? Double
         hideDelay = Self.clamp(storedHideDelay ?? 0.3, to: 0.1...2.0)
         isTranslucent = (defaults.object(forKey: Key.isTranslucent) as? Bool) ?? true
+        isAgentAccessEnabled = (defaults.object(forKey: Key.isAgentAccessEnabled) as? Bool) ?? true
+    }
+
+    var agentServerPort: UInt16 {
+        guard let stored = defaults.object(forKey: Key.agentServerPort) as? Int,
+              (1024...65_535).contains(stored) else {
+            return AgentServer.defaultPort
+        }
+        return UInt16(stored)
     }
 
     var hasShownWelcome: Bool {

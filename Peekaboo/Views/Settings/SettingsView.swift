@@ -107,12 +107,32 @@ struct SettingsView: View {
                 }
             }
 
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle(isOn: $settings.isAgentAccessEnabled) {
+                    Label("Agent access", systemImage: "sparkles")
+                        .font(.headline)
+                }
+
+                Text("Let AI agents on this Mac read and update your tasks over MCP.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if settings.isAgentAccessEnabled {
+                    Text(verbatim: "http://127.0.0.1:\(settings.agentServerPort)/mcp")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.tertiary)
+                        .textSelection(.enabled)
+                }
+            }
+
             Spacer(minLength: 0)
 
             aboutFooter
         }
         .padding(28)
-        .frame(width: 520, height: 720)
+        .frame(width: 520, height: 800)
         .onAppear {
             loginItemService.refresh()
         }

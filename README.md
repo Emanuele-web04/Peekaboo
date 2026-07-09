@@ -22,6 +22,7 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 - Launch at login support
 - Native menu bar app with no Dock icon
 - Event-driven UI and low-overhead pointer sampling
+- Built-in MCP server so local AI agents can read and update tasks
 
 ## Requirements
 
@@ -49,6 +50,46 @@ Press `Command–,` while Peekaboo is focused to open Settings.
 - Drag tasks to reorder them within the same status and priority group.
 - Drag a task into another app to insert its title as plain text.
 - Use the trailing ellipsis to edit, move, reprioritize or delete a task.
+
+## Agent access (MCP)
+
+While Peekaboo is running it serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. Any local agent — Claude Code, Synara, Codex, Cursor — can list, create, update, complete and delete tasks, and every change appears live in the panel. Toggle it under Settings → Agent access; change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
+
+Tools: `list_tasks`, `create_task`, `update_task` (set `status` to `done` to complete), `delete_task`. Statuses are `todo`, `inProgress`, `done`, `backlog`; priorities are `none`, `low`, `medium`, `high`.
+
+Claude Code / Synara (available in every project via `--scope user`):
+
+```sh
+claude mcp add --transport http --scope user peekaboo http://127.0.0.1:7335/mcp
+```
+
+or in a project's `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "peekaboo": {
+      "type": "http",
+      "url": "http://127.0.0.1:7335/mcp"
+    }
+  }
+}
+```
+
+Codex, in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.peekaboo]
+url = "http://127.0.0.1:7335/mcp"
+```
+
+If your Codex version predates Streamable HTTP support, bridge it over stdio instead:
+
+```toml
+[mcp_servers.peekaboo]
+command = "npx"
+args = ["-y", "mcp-remote", "http://127.0.0.1:7335/mcp"]
+```
 
 ## Tests
 

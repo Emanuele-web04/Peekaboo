@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftData
 
 @MainActor
@@ -14,8 +15,10 @@ final class AppCoordinator {
     private let panelController: PeekPanelController
     private let settingsWindowController: SettingsWindowController
     private let hoverMonitor: CornerHoverMonitor
+    private let agentServer: AgentServer
     private let isUITesting: Bool
     private var menuNotificationTokens: [NSObjectProtocol] = []
+    private var agentAccessObservation: AnyCancellable?
     private var hasStarted = false
     private lazy var newTaskHotKey = GlobalHotKey { [weak self] in
         self?.showNewTask()
@@ -47,6 +50,10 @@ final class AppCoordinator {
         self.panelController = panelController
         self.loginItemService = loginItemService
         self.settingsWindowController = settingsWindowController
+        agentServer = AgentServer(
+            port: settings.agentServerPort,
+            handler: MCPRequestHandler(tools: AgentTaskTools(store: store))
+        )
         cleanupService = DailyCleanupService(store: store)
         hoverMonitor = CornerHoverMonitor(
             settings: settings,
@@ -70,6 +77,9 @@ final class AppCoordinator {
 
         newTaskHotKey.register()
         hoverMonitor.start()
+        agentAccessObservation = settings.$isAgentAccessEnabled.sink { [weak self] isEnabled in
+            isEnabled ? self?.agentServer.start() : self?.agentServer.stop()
+        }
         if !settings.hasShownWelcome {
             settings.markWelcomeShown()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
@@ -82,6 +92,8 @@ final class AppCoordinator {
         cleanupService.stop()
         hoverMonitor.stop()
         newTaskHotKey.unregister()
+        agentAccessObservation = nil
+        agentServer.stop()
         menuNotificationTokens.forEach(NotificationCenter.default.removeObserver)
         menuNotificationTokens.removeAll()
         hasStarted = false
