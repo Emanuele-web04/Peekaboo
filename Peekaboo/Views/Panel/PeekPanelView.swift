@@ -6,6 +6,7 @@ struct PeekPanelView: View {
     @ObservedObject var settings: AppSettings
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var scopeNamespace
 
     var body: some View {
         VStack(spacing: 0) {
@@ -94,17 +95,64 @@ struct PeekPanelView: View {
     }
 
     private var scopePicker: some View {
-        Picker("List", selection: scopeBinding) {
+        HStack(spacing: 6) {
             ForEach(TaskScope.allCases) { scope in
-                Text(scope.title).tag(scope)
+                scopeCapsule(scope)
             }
         }
-        .pickerStyle(.segmented)
-        .controlSize(.small)
-        .labelsHidden()
         .padding(.horizontal, PeekabooStyle.horizontalPadding)
+        .padding(.top, 2)
         .padding(.bottom, 8)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("task-scope-picker")
+    }
+
+    private func scopeCapsule(_ scope: TaskScope) -> some View {
+        let isSelected = uiState.selectedScope == scope
+
+        return Button {
+            selectScope(scope)
+        } label: {
+            Text(scope.title)
+                .font(.system(
+                    size: 13,
+                    weight: isSelected ? .semibold : .medium,
+                    design: .rounded
+                ))
+                .foregroundStyle(
+                    isSelected
+                        ? Color(nsColor: .windowBackgroundColor)
+                        : Color.secondary
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: 30)
+                .background {
+                    if isSelected {
+                        Capsule(style: .continuous)
+                            .fill(Color.primary.opacity(0.9))
+                            .matchedGeometryEffect(id: "scope-ink", in: scopeNamespace)
+                    } else {
+                        Capsule(style: .continuous)
+                            .fill(Color.primary.opacity(0.06))
+                    }
+                }
+                .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(scope.title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityIdentifier("task-scope-\(scope.rawValue)")
+    }
+
+    private func selectScope(_ scope: TaskScope) {
+        guard uiState.selectedScope != scope else { return }
+        if reduceMotion {
+            uiState.selectScope(scope)
+        } else {
+            withAnimation(PeekabooMotion.spring) {
+                uiState.selectScope(scope)
+            }
+        }
     }
 
     private var taskList: some View {
@@ -157,10 +205,4 @@ struct PeekPanelView: View {
         uiState.selectedScope == .tasks ? "New task" : "New backlog idea"
     }
 
-    private var scopeBinding: Binding<TaskScope> {
-        Binding(
-            get: { uiState.selectedScope },
-            set: { uiState.selectScope($0) }
-        )
-    }
 }
