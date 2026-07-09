@@ -44,6 +44,7 @@ Choose a corner and reveal delay in Settings. Press `Control–Option–Space` f
 - Click the priority-colored circle to complete a task.
 - Click the circle on a completed task to restore it.
 - Drag tasks to reorder them within the same status and priority group.
+- Drag a task into another app to insert its title as plain text.
 - Use the trailing ellipsis to edit, move, reprioritize or delete a task.
 
 ## Tests

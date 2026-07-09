@@ -92,6 +92,7 @@ final class CornerHoverMonitor {
         } ?? false
         let isInPanel = panelController.visibleFrame?.contains(location) ?? false
         let isMouseButtonPressed = NSEvent.pressedMouseButtons != 0
+        if !isMouseButtonPressed { uiState.endDragging() }
 
         let uptime = ProcessInfo.processInfo.systemUptime
         let transition = stateMachine.update(

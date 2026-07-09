@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TaskRowView: View {
     @ObservedObject var store: TaskStore
@@ -60,14 +61,13 @@ struct TaskRowView: View {
         )
         .contentShape(Rectangle())
         .contextMenu { taskActions }
-        .draggable(task.id.uuidString) {
+        .onDrag {
+            dragItemProvider()
+        } preview: {
             dragPreview
         }
-        .dropDestination(for: String.self) { identifiers, _ in
-            guard let rawID = identifiers.first, let draggedID = UUID(uuidString: rawID) else {
-                return false
-            }
-            return store.reorder(taskID: draggedID, relativeTo: task.id)
+        .onDrop(of: [.peekabooTask], isTargeted: nil) { providers, _ in
+            acceptDrop(from: providers)
         }
         .onHover { hovering in
             withAnimation(reduceMotion ? nil : PeekabooMotion.quick) {
@@ -96,6 +96,34 @@ struct TaskRowView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+
+    private func dragItemProvider() -> NSItemProvider {
+        uiState.beginDragging(task)
+        return TaskDragPayload(id: task.id, title: task.title).itemProvider()
+    }
+
+    private func acceptDrop(from providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first(where: {
+            $0.hasItemConformingToTypeIdentifier(UTType.peekabooTask.identifier)
+        }) else {
+            return false
+        }
+
+        if let draggedTaskID = uiState.draggedTaskID {
+            uiState.endDragging()
+            return store.reorder(taskID: draggedTaskID, relativeTo: task.id)
+        }
+
+        provider.loadDataRepresentation(forTypeIdentifier: UTType.peekabooTask.identifier) { data, _ in
+            guard let data, let payload = try? JSONDecoder().decode(TaskDragPayload.self, from: data) else {
+                return
+            }
+            Task { @MainActor in
+                store.reorder(taskID: payload.id, relativeTo: task.id)
+            }
+        }
+        return true
     }
 
     @ViewBuilder

@@ -35,6 +35,7 @@ ui_tests_group = add_swift_sources(project, ui_tests, 'PeekabooUITests', 'Peekab
 assets = app_group.new_file('Resources/Assets.xcassets')
 app.resources_build_phase.add_file_reference(assets)
 app_group.new_file('Peekaboo.entitlements')
+app_group.new_file('Info.plist')
 
 project.build_configurations.each do |config|
   config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '14.0'
@@ -44,10 +45,8 @@ app.build_configurations.each do |config|
   settings = config.build_settings
   settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.Peekaboo'
   settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
-  settings['GENERATE_INFOPLIST_FILE'] = 'YES'
-  settings['INFOPLIST_KEY_CFBundleDisplayName'] = 'Peekaboo'
-  settings['INFOPLIST_KEY_LSApplicationCategoryType'] = 'public.app-category.productivity'
-  settings['INFOPLIST_KEY_LSUIElement'] = 'YES'
+  settings['GENERATE_INFOPLIST_FILE'] = 'NO'
+  settings['INFOPLIST_FILE'] = 'Peekaboo/Info.plist'
   settings['CODE_SIGN_ENTITLEMENTS'] = 'Peekaboo/Peekaboo.entitlements'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
   settings['ENABLE_APP_SANDBOX'] = 'YES'

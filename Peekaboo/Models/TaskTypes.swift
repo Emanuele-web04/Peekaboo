@@ -1,4 +1,37 @@
+import AppKit
+import CoreTransferable
 import Foundation
+import UniformTypeIdentifiers
+
+struct TaskDragPayload: Codable, Sendable, Transferable {
+    let id: UUID
+    let title: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .peekabooTask)
+        ProxyRepresentation(exporting: \.title)
+    }
+
+    func itemProvider() -> NSItemProvider {
+        let provider = NSItemProvider(object: title as NSString)
+        provider.registerDataRepresentation(
+            forTypeIdentifier: UTType.peekabooTask.identifier,
+            visibility: .ownProcess
+        ) { completion in
+            do {
+                completion(try JSONEncoder().encode(self), nil)
+            } catch {
+                completion(nil, error)
+            }
+            return nil
+        }
+        return provider
+    }
+}
+
+extension UTType {
+    static let peekabooTask = UTType(exportedAs: "com.emanueledipietro.peekaboo.task")
+}
 
 enum TaskStatus: String, Codable, CaseIterable, Identifiable {
     case todo
