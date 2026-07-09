@@ -53,7 +53,7 @@ Press `Command–,` while Peekaboo is focused to open Settings.
 
 ## Agent access (MCP)
 
-While Peekaboo is running it serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. Any local agent — Claude Code, Synara, Codex, Cursor — can list, create, update, complete and delete tasks, and every change appears live in the panel. Toggle it under Settings → Agent access; change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
+When Agent access is explicitly enabled, Peekaboo serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. The feature is disabled by default. While enabled, any local process — including Claude Code, Synara, Codex or Cursor — can list, create, update, complete and delete tasks, and every change appears live in the panel. Toggle it under Settings → Agent access; change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
 
 Tools: `list_tasks`, `create_task`, `update_task` (set `status` to `done` to complete), `delete_task`. Statuses are `todo`, `inProgress`, `done`, `backlog`; priorities are `none`, `low`, `medium`, `high`.
 

@@ -29,7 +29,14 @@ final class AgentTaskTools {
     static let definitions: [[String: Any]] = [
         [
             "name": "list_tasks",
-            "description": "List Peekaboo tasks in the order the app displays them. Optionally filter by status. Statuses: inProgress, todo, done, backlog.",
+            "title": "List Peekaboo Tasks",
+            "description": "Read tasks directly from Peekaboo. Use this instead of opening the Peekaboo app with Computer Use. Tasks are returned in display order and can be filtered by status.",
+            "annotations": [
+                "readOnlyHint": true,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+            ],
             "inputSchema": [
                 "type": "object",
                 "properties": [
@@ -44,7 +51,14 @@ final class AgentTaskTools {
         ],
         [
             "name": "create_task",
-            "description": "Create a task in Peekaboo. Use status backlog for ideas that are not ready to work on.",
+            "title": "Create Peekaboo Task",
+            "description": "Create a task directly in Peekaboo without using its graphical interface. Use status backlog for ideas that are not ready to work on.",
+            "annotations": [
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": false
+            ],
             "inputSchema": [
                 "type": "object",
                 "properties": [
@@ -69,7 +83,14 @@ final class AgentTaskTools {
         ],
         [
             "name": "update_task",
-            "description": "Update a task's title, status, or priority. Set status to done to complete a task, or back to todo to reopen it.",
+            "title": "Update Peekaboo Task",
+            "description": "Update a Peekaboo task directly without using its graphical interface. Change its title, status, or priority; set status to done to complete it or todo to reopen it.",
+            "annotations": [
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+            ],
             "inputSchema": [
                 "type": "object",
                 "properties": [
@@ -93,7 +114,14 @@ final class AgentTaskTools {
         ],
         [
             "name": "delete_task",
-            "description": "Delete a task permanently. Prefer update_task with status done for finished work.",
+            "title": "Delete Peekaboo Task",
+            "description": "Permanently delete a task directly from Peekaboo. Prefer update_task with status done for finished work.",
+            "annotations": [
+                "readOnlyHint": false,
+                "destructiveHint": true,
+                "idempotentHint": false,
+                "openWorldHint": false
+            ],
             "inputSchema": [
                 "type": "object",
                 "properties": [
@@ -161,14 +189,13 @@ final class AgentTaskTools {
             ? nil
             : try status(from: arguments, allowed: TaskStatus.allCases)
 
-        if let newTitle {
-            try perform { store.rename(task, to: newTitle) }
-        }
-        if let newPriority {
-            try perform { store.setPriority(newPriority, for: task) }
-        }
-        if let newStatus {
-            try perform { store.setStatus(newStatus, for: task) }
+        try perform {
+            store.update(
+                task,
+                title: newTitle,
+                priority: newPriority,
+                status: newStatus
+            )
         }
         return try encode(["task": serialize(task)])
     }

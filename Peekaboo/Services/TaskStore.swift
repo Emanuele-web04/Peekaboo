@@ -61,30 +61,55 @@ final class TaskStore: ObservableObject {
 
     @discardableResult
     func rename(_ task: TaskItem, to title: String) -> Bool {
-        let normalizedTitle = Self.normalized(title)
-        guard !normalizedTitle.isEmpty else { return false }
-        guard task.title != normalizedTitle else { return true }
-        task.title = normalizedTitle
-        task.updatedAt = now()
-        return save()
+        update(task, title: title)
     }
 
     @discardableResult
     func setPriority(_ priority: TaskPriority, for task: TaskItem) -> Bool {
-        guard task.priority != priority else { return true }
-        task.manualOrder = nextManualOrder(status: task.status, priority: priority, excluding: task.id)
-        task.priority = priority
-        task.updatedAt = now()
-        return save()
+        update(task, priority: priority)
     }
 
     @discardableResult
     func setStatus(_ status: TaskStatus, for task: TaskItem) -> Bool {
-        guard task.status != status else { return true }
-        task.manualOrder = nextManualOrder(status: status, priority: task.priority, excluding: task.id)
-        task.status = status
-        task.updatedAt = now()
-        task.completedAt = status == .done ? now() : nil
+        update(task, status: status)
+    }
+
+    /// Applies a task edit as one SwiftData transaction so callers never see
+    /// a partially persisted title, priority, or status change.
+    @discardableResult
+    func update(
+        _ task: TaskItem,
+        title: String? = nil,
+        priority: TaskPriority? = nil,
+        status: TaskStatus? = nil
+    ) -> Bool {
+        let normalizedTitle = title.map(Self.normalized)
+        if let normalizedTitle, normalizedTitle.isEmpty { return false }
+
+        let destinationPriority = priority ?? task.priority
+        let destinationStatus = status ?? task.status
+        let titleChanged = normalizedTitle.map { $0 != task.title } ?? false
+        let priorityChanged = destinationPriority != task.priority
+        let statusChanged = destinationStatus != task.status
+        guard titleChanged || priorityChanged || statusChanged else { return true }
+
+        let timestamp = now()
+        if priorityChanged || statusChanged {
+            task.manualOrder = nextManualOrder(
+                status: destinationStatus,
+                priority: destinationPriority,
+                excluding: task.id
+            )
+        }
+        if let normalizedTitle {
+            task.title = normalizedTitle
+        }
+        task.priority = destinationPriority
+        task.status = destinationStatus
+        task.updatedAt = timestamp
+        if statusChanged {
+            task.completedAt = destinationStatus == .done ? timestamp : nil
+        }
         return save()
     }
 

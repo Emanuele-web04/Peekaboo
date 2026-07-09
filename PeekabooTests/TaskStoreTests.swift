@@ -3,6 +3,20 @@ import UniformTypeIdentifiers
 @testable import Peekaboo
 
 final class TaskStoreTests: XCTestCase {
+    @MainActor
+    func testAgentAccessRequiresExplicitOptInOnlyOnce() {
+        let suiteName = "PeekabooTests.AgentAccess.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let initialSettings = AppSettings(defaults: defaults)
+        XCTAssertFalse(initialSettings.isAgentAccessEnabled)
+
+        initialSettings.isAgentAccessEnabled = true
+        let reloadedSettings = AppSettings(defaults: defaults)
+        XCTAssertTrue(reloadedSettings.isAgentAccessEnabled)
+    }
+
     func testTaskDragPayloadExportsInternalDataAndPlainText() {
         let payload = TaskDragPayload(title: "Paste me")
         let provider = payload.itemProvider()
@@ -60,6 +74,22 @@ final class TaskStoreTests: XCTestCase {
         let afterPriority = try XCTUnwrap(store.tasks.first)
         XCTAssertFalse(store.setStatus(.done, for: afterPriority))
         let restored = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(restored.status, .todo)
+        XCTAssertNil(restored.completedAt)
+    }
+
+    @MainActor
+    func testAtomicUpdateRollsBackEveryFieldOnPersistenceFailure() throws {
+        let gate = PersistenceGate()
+        let store = try makeTestStore(persist: gate.save)
+        let task = try XCTUnwrap(store.create(title: "Original", priority: .low))
+        gate.shouldFail = true
+
+        XCTAssertFalse(store.update(task, title: "Changed", priority: .high, status: .done))
+
+        let restored = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(restored.title, "Original")
+        XCTAssertEqual(restored.priority, .low)
         XCTAssertEqual(restored.status, .todo)
         XCTAssertNil(restored.completedAt)
     }

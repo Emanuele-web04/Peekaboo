@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Network
 import os
@@ -5,9 +6,18 @@ import os
 /// Loopback-only HTTP server that exposes the MCP endpoint at /mcp so local
 /// AI agents (Claude Code, Codex, Synara, …) can read and update tasks.
 @MainActor
-final class AgentServer {
+final class AgentServer: ObservableObject {
+    enum State: Equatable {
+        case stopped
+        case starting
+        case running
+        case failed(String)
+    }
+
     static let defaultPort: UInt16 = 7335
     nonisolated private static let maxRequestBytes = 1_048_576
+
+    @Published private(set) var state: State = .stopped
 
     private let port: UInt16
     private let handler: MCPRequestHandler
@@ -24,6 +34,7 @@ final class AgentServer {
         guard listener == nil else { return }
         guard let endpointPort = NWEndpoint.Port(rawValue: port) else {
             logger.error("Invalid agent server port \(self.port)")
+            state = .failed("Invalid port \(port).")
             return
         }
 
@@ -36,19 +47,26 @@ final class AgentServer {
             listener = try NWListener(using: parameters)
         } catch {
             logger.error("Unable to create agent server listener: \(error.localizedDescription)")
+            state = .failed(error.localizedDescription)
             return
         }
 
+        state = .starting
         listener.stateUpdateHandler = { [weak self, weak listener, logger, port] state in
             switch state {
             case .ready:
                 logger.info("Agent MCP server listening on http://127.0.0.1:\(port)/mcp")
+                Task { @MainActor in
+                    guard let self, let listener, self.listener === listener else { return }
+                    self.state = .running
+                }
             case let .failed(error):
                 logger.error("Agent MCP server failed: \(error.localizedDescription)")
                 Task { @MainActor in
                     guard let self, let listener, self.listener === listener else { return }
                     listener.cancel()
                     self.listener = nil
+                    self.state = .failed(error.localizedDescription)
                 }
             default:
                 break
@@ -66,6 +84,7 @@ final class AgentServer {
     func stop() {
         listener?.cancel()
         listener = nil
+        state = .stopped
     }
 
     nonisolated private func receive(on connection: NWConnection, buffer: Data) {
@@ -117,7 +136,10 @@ final class AgentServer {
                 connection.cancel()
                 return
             }
-            let result = self.handler.handle(body: request.body)
+            let result = self.handler.handle(
+                body: request.body,
+                protocolVersion: request.headers["mcp-protocol-version"]
+            )
             self.send(status: result.status, reason: result.reason, body: result.body, on: connection)
         }
     }

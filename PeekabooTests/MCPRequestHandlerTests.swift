@@ -24,6 +24,8 @@ final class MCPRequestHandlerTests: XCTestCase {
         XCTAssertNotNil(capabilities["tools"])
         let serverInfo = try XCTUnwrap(result["serverInfo"] as? [String: Any])
         XCTAssertEqual(serverInfo["name"] as? String, "peekaboo")
+        let instructions = try XCTUnwrap(result["instructions"] as? String)
+        XCTAssertTrue(instructions.contains("Do not open or control the Peekaboo GUI with Computer Use"))
     }
 
     func testInitializeFallsBackToLatestSupportedVersion() throws {
@@ -49,6 +51,62 @@ final class MCPRequestHandlerTests: XCTestCase {
         XCTAssertEqual(error["code"] as? Int, -32700)
     }
 
+    func testMissingJSONRPCVersionReturnsInvalidRequest() throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "id": 1,
+            "method": "ping"
+        ])
+        let response = try decode(handler.handle(body: body))
+        let error = try XCTUnwrap(response["error"] as? [String: Any])
+        XCTAssertEqual(error["code"] as? Int, -32600)
+    }
+
+    func testNullIDStillReceivesAResponse() throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "jsonrpc": "2.0",
+            "id": NSNull(),
+            "method": "ping"
+        ])
+        let response = try decode(handler.handle(body: body))
+        XCTAssertTrue(response["id"] is NSNull)
+        XCTAssertNotNil(response["result"])
+    }
+
+    func testBooleanIDReturnsInvalidRequest() throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "jsonrpc": "2.0",
+            "id": true,
+            "method": "ping"
+        ])
+        let response = try decode(handler.handle(body: body))
+        let error = try XCTUnwrap(response["error"] as? [String: Any])
+        XCTAssertEqual(error["code"] as? Int, -32600)
+    }
+
+    func testUnsupportedProtocolVersionReturnsHTTPBadRequest() throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list"
+        ])
+        let result = handler.handle(body: body, protocolVersion: "1999-01-01")
+        XCTAssertEqual(result.status, 400)
+        XCTAssertEqual(result.reason, "Bad Request")
+        XCTAssertNotNil(result.body)
+    }
+
+    func testNonObjectParamsReturnInvalidParams() throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": []
+        ])
+        let response = try decode(handler.handle(body: body))
+        let error = try XCTUnwrap(response["error"] as? [String: Any])
+        XCTAssertEqual(error["code"] as? Int, -32602)
+    }
+
     func testUnknownMethodReturnsMethodNotFound() throws {
         let response = try send(method: "resources/list")
         let error = try XCTUnwrap(response["error"] as? [String: Any])
@@ -63,6 +121,10 @@ final class MCPRequestHandlerTests: XCTestCase {
             tools.compactMap { $0["name"] as? String }.sorted(),
             ["create_task", "delete_task", "list_tasks", "update_task"]
         )
+        let listTool = try XCTUnwrap(tools.first { $0["name"] as? String == "list_tasks" })
+        let annotations = try XCTUnwrap(listTool["annotations"] as? [String: Any])
+        XCTAssertEqual(annotations["readOnlyHint"] as? Bool, true)
+        XCTAssertEqual(annotations["destructiveHint"] as? Bool, false)
     }
 
     func testCreateTaskInsertsTaskWithPriorityAndStatus() throws {

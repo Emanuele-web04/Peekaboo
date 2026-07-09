@@ -5,10 +5,11 @@ import SwiftUI
 final class SettingsWindowController: NSWindowController {
     private var hasPositionedWindow = false
 
-    init(settings: AppSettings, loginItemService: LoginItemService) {
+    init(settings: AppSettings, loginItemService: LoginItemService, agentServer: AgentServer) {
         let rootView = SettingsView(
             settings: settings,
-            loginItemService: loginItemService
+            loginItemService: loginItemService,
+            agentServer: agentServer
         )
         let hostingController = NSHostingController(rootView: rootView)
         let window = NSWindow(contentViewController: hostingController)

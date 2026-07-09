@@ -14,6 +14,7 @@ final class AppSettings: ObservableObject {
         static let isTranslucent = "isTranslucent"
         static let isAgentAccessEnabled = "isAgentAccessEnabled"
         static let agentServerPort = "agentServerPort"
+        static let hasAdoptedAgentAccessOptIn = "hasAdoptedAgentAccessOptIn"
     }
 
     @Published var corner: ScreenCorner {
@@ -82,7 +83,13 @@ final class AppSettings: ObservableObject {
         let storedHideDelay = defaults.object(forKey: Key.hideDelay) as? Double
         hideDelay = Self.clamp(storedHideDelay ?? 0.3, to: 0.1...2.0)
         isTranslucent = (defaults.object(forKey: Key.isTranslucent) as? Bool) ?? true
-        isAgentAccessEnabled = (defaults.object(forKey: Key.isAgentAccessEnabled) as? Bool) ?? true
+        if !defaults.bool(forKey: Key.hasAdoptedAgentAccessOptIn) {
+            // Earlier MCP builds enabled the mutating local server implicitly.
+            // Require one explicit opt-in from every existing installation.
+            defaults.set(false, forKey: Key.isAgentAccessEnabled)
+            defaults.set(true, forKey: Key.hasAdoptedAgentAccessOptIn)
+        }
+        isAgentAccessEnabled = (defaults.object(forKey: Key.isAgentAccessEnabled) as? Bool) ?? false
     }
 
     var agentServerPort: UInt16 {

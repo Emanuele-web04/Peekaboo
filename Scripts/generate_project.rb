@@ -27,6 +27,9 @@ FileUtils.mkdir_p(File.dirname(project_path))
 staging_directory = Dir.mktmpdir('.peekaboo-project-', File.dirname(project_path))
 at_exit { FileUtils.rm_rf(staging_directory) if File.exist?(staging_directory) }
 staged_project_path = File.join(staging_directory, File.basename(project_path))
+# xcodeproj 1.27 can emit Xcode 16 projects but does not expose Apple's
+# compatibility object version 71 as a constructor option. Generate using its
+# supported format, then normalize the serialized project below.
 project = Xcodeproj::Project.new(staged_project_path, false, 77)
 project.root_object.attributes['LastSwiftUpdateCheck'] = '2660'
 project.root_object.attributes['LastUpgradeCheck'] = '2660'
@@ -121,6 +124,14 @@ scheme.add_test_target(ui_tests)
 scheme.save_as(staged_project_path, 'Peekaboo', true)
 
 project.save
+
+project_file = File.join(staged_project_path, 'project.pbxproj')
+project_contents = File.read(project_file)
+project_contents.sub!("\tobjectVersion = 77;", "\tobjectVersion = 71;")
+project_contents.gsub!(/^\s*minimizedProjectReferenceProxies = 0;\n/, '')
+project_contents.gsub!(/^\s*preferredProjectObjectVersion = 77;\n/, '')
+File.write(project_file, project_contents)
+
 Xcodeproj::Project.open(staged_project_path)
 
 backup_path = "#{project_path}.backup-#{Process.pid}-#{SecureRandom.hex(4)}"
