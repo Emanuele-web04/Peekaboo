@@ -68,6 +68,7 @@ app.build_configurations.each do |config|
   settings['INFOPLIST_FILE'] = 'Peekaboo/Info.plist'
   settings['CODE_SIGN_ENTITLEMENTS'] = 'Peekaboo/Peekaboo.entitlements'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
+  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
   settings['ENABLE_APP_SANDBOX'] = 'YES'
   settings['ENABLE_HARDENED_RUNTIME'] = 'YES'
   settings['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'

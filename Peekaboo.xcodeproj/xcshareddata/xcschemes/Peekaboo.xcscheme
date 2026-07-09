@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0229BE2E6C813E754DBF640A1250A3F4"
+               BlueprintIdentifier = "EA2E0EFFE941E13C63FF1E9AE0D3D696"
                BuildableName = "Peekaboo.app"
                BlueprintName = "Peekaboo"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -30,7 +30,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0229BE2E6C813E754DBF640A1250A3F4"
+            BlueprintIdentifier = "EA2E0EFFE941E13C63FF1E9AE0D3D696"
             BuildableName = "Peekaboo.app"
             BlueprintName = "Peekaboo"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -41,7 +41,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "86D52AE6413F24A764D9EE0CCA3F5B07"
+               BlueprintIdentifier = "91BDB09E2CCE55053A520FC3E5888B62"
                BuildableName = "PeekabooTests.xctest"
                BlueprintName = "PeekabooTests"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -73,7 +73,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0229BE2E6C813E754DBF640A1250A3F4"
+            BlueprintIdentifier = "EA2E0EFFE941E13C63FF1E9AE0D3D696"
             BuildableName = "Peekaboo.app"
             BlueprintName = "Peekaboo"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -90,7 +90,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0229BE2E6C813E754DBF640A1250A3F4"
+            BlueprintIdentifier = "EA2E0EFFE941E13C63FF1E9AE0D3D696"
             BuildableName = "Peekaboo.app"
             BlueprintName = "Peekaboo"
             ReferencedContainer = "container:Peekaboo.xcodeproj">

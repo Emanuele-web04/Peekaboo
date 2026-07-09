@@ -15,7 +15,7 @@ final class SettingsWindowController: NSWindowController {
 
         window.title = "Peekaboo Settings"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 720))
+        window.setContentSize(NSSize(width: 520, height: 800))
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
         window.collectionBehavior = [.moveToActiveSpace]
