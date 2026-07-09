@@ -93,7 +93,20 @@ final class AppCoordinator {
 
     func openSettings() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        DispatchQueue.main.async {
+            let opened = NSApp.sendAction(
+                Selector(("showSettingsWindow:")),
+                to: nil,
+                from: nil
+            )
+            if !opened {
+                NSApp.sendAction(
+                    Selector(("showPreferencesWindow:")),
+                    to: nil,
+                    from: nil
+                )
+            }
+        }
     }
 
     private func observeMenuTracking() {

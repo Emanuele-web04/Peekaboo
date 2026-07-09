@@ -55,7 +55,9 @@ struct PeekPanelView: View {
 
             Spacer()
 
-            SettingsLink {
+            Button {
+                AppCoordinator.shared.openSettings()
+            } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 10, weight: .semibold))
                     .frame(width: 24, height: 24)
