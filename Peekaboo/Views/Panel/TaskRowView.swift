@@ -21,18 +21,22 @@ struct TaskRowView: View {
 
             Group {
                 if isEditing {
-                    TextField("Task title", text: $editTitle)
+                    TextField("Task title", text: $editTitle, axis: .vertical)
                         .textFieldStyle(.plain)
+                        .lineLimit(1...6)
                         .focused($isRenameFocused)
                         .onSubmit(commitRename)
                         .onExitCommand(perform: cancelRename)
                         .accessibilityIdentifier("edit-task-title-\(task.id.uuidString)")
                 } else {
                     Text(task.title)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                        .lineLimit(nil)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                         .strikethrough(task.status == .done, color: .secondary)
                         .foregroundStyle(task.status == .done ? .secondary : .primary)
+                        .accessibilityLabel(task.title)
                 }
             }
             .font(.system(size: 13, weight: task.status == .inProgress ? .medium : .regular, design: .rounded))
@@ -46,7 +50,8 @@ struct TaskRowView: View {
 
             trailingAction
         }
-        .frame(height: PeekabooStyle.rowHeight)
+        .padding(.vertical, 4)
+        .frame(minHeight: PeekabooStyle.rowHeight)
         .padding(.horizontal, 4)
         .background(
             Color.primary.opacity(isHovering ? 0.055 : 0),

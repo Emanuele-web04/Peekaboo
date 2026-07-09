@@ -49,4 +49,18 @@ final class PeekabooUITests: XCTestCase {
         ).firstMatch
         XCTAssertTrue(editField.waitForExistence(timeout: 2))
     }
+
+    func testLongTaskTitleWrapsInsteadOfTruncating() throws {
+        app.buttons["add-task-button"].click()
+
+        let longTitle = "A long task title that should wrap onto multiple lines instead of being cut off"
+        let titleField = app.textFields["new-task-title"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 2))
+        titleField.typeText(longTitle)
+        titleField.typeKey(.return, modifierFlags: [])
+
+        let title = app.staticTexts[longTitle]
+        XCTAssertTrue(title.waitForExistence(timeout: 2))
+        XCTAssertGreaterThan(title.frame.height, 20)
+    }
 }
