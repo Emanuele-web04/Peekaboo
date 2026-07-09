@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 71;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -179,7 +179,6 @@
 				FEDCDD39E5F8CB190125A777D1EABFCF /* Peekaboo.entitlements */,
 				AC70F72F8C9B6AD92AB549660BB64413 /* Info.plist */,
 			);
-			name = Peekaboo;
 			path = Peekaboo;
 			sourceTree = "<group>";
 		};
@@ -202,7 +201,6 @@
 				4FBC91080DF442F11DE1BE888DDCCE5E /* TaskStoreTests.swift */,
 				BDA193FD535F0AAB97A9698545509260 /* TestSupport.swift */,
 			);
-			name = PeekabooTests;
 			path = PeekabooTests;
 			sourceTree = "<group>";
 		};
@@ -219,7 +217,6 @@
 			children = (
 				37C89E71F8DFCAAC0F0C0FD46E0FDDD5 /* PeekabooUITests.swift */,
 			);
-			name = PeekabooUITests;
 			path = PeekabooUITests;
 			sourceTree = "<group>";
 		};
@@ -305,8 +302,6 @@
 				Base,
 			);
 			mainGroup = 2A1497E0F502E4C3AB5B938FCD3E44EE;
-			minimizedProjectReferenceProxies = 0;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 34E7E78AA6BC937FD8E1D5E46055CDC2 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -425,6 +420,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HR24WHR326;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -624,6 +620,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HR24WHR326;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
