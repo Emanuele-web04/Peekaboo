@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 @MainActor
 final class CornerHoverMonitor {
@@ -62,7 +63,11 @@ final class CornerHoverMonitor {
 
     func revealProgrammatically(openComposer: Bool = false) {
         guard let screen = screen(containing: NSEvent.mouseLocation) ?? NSScreen.main else { return }
-        if openComposer { uiState.beginAdding() }
+        if openComposer {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { uiState.beginAdding() }
+        }
         stateMachine.forceVisible(at: ProcessInfo.processInfo.systemUptime, grace: 3)
         panelController.show(on: screen, corner: settings.corner, makeKey: openComposer)
     }
