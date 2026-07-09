@@ -65,6 +65,7 @@ struct PeekPanelView: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .keyboardShortcut(",", modifiers: .command)
             .help("Settings")
             .accessibilityLabel("Settings")
             .accessibilityIdentifier("settings-button")

@@ -11,5 +11,13 @@ struct PeekabooApp: App {
             MenuBarView(store: coordinator.store, coordinator: coordinator)
         }
         .menuBarExtraStyle(.menu)
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") {
+                    coordinator.openSettings()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
     }
 }
