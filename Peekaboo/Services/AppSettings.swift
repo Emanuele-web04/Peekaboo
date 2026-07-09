@@ -24,7 +24,7 @@ final class AppSettings: ObservableObject {
 
     @Published var revealDelay: Double {
         didSet {
-            let clamped = min(max(revealDelay, 0.2), 2.0)
+            let clamped = Self.clamp(revealDelay, to: 0.2...2.0)
             if revealDelay != clamped {
                 revealDelay = clamped
             } else {
@@ -35,7 +35,7 @@ final class AppSettings: ObservableObject {
 
     @Published var hideDelay: Double {
         didSet {
-            let clamped = min(max(hideDelay, 0.1), 2.0)
+            let clamped = Self.clamp(hideDelay, to: 0.1...2.0)
             if hideDelay != clamped {
                 hideDelay = clamped
             } else {
@@ -72,9 +72,9 @@ final class AppSettings: ObservableObject {
             }
             defaults.set(true, forKey: Key.hasAdoptedInstantReveal)
         }
-        revealDelay = min(max(resolvedDelay, 0.2), 2.0)
+        revealDelay = Self.clamp(resolvedDelay, to: 0.2...2.0)
         let storedHideDelay = defaults.object(forKey: Key.hideDelay) as? Double
-        hideDelay = min(max(storedHideDelay ?? 0.3, 0.1), 2.0)
+        hideDelay = Self.clamp(storedHideDelay ?? 0.3, to: 0.1...2.0)
         isTranslucent = (defaults.object(forKey: Key.isTranslucent) as? Bool) ?? true
     }
 
@@ -84,5 +84,9 @@ final class AppSettings: ObservableObject {
 
     func markWelcomeShown() {
         defaults.set(true, forKey: Key.hasShownWelcome)
+    }
+
+    private static func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {
+        min(max(value, range.lowerBound), range.upperBound)
     }
 }

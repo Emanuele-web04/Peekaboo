@@ -3,7 +3,6 @@ import Foundation
 import UniformTypeIdentifiers
 
 struct TaskDragPayload: Sendable {
-    let id: UUID
     let title: String
 
     func itemProvider() -> NSItemProvider {
@@ -117,15 +116,6 @@ enum TaskPriority: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String { rawValue.capitalized }
-
-    var shortLabel: String {
-        switch self {
-        case .none: "–"
-        case .low: "L"
-        case .medium: "M"
-        case .high: "H"
-        }
-    }
 
     var sortRank: Int {
         switch self {

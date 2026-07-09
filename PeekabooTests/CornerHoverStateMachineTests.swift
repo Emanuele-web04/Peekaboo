@@ -34,4 +34,34 @@ final class CornerHoverStateMachineTests: XCTestCase {
         XCTAssertEqual(machine.update(at: 10, isInHotspot: false, isInPanel: false, isInteractionLocked: true, revealDelay: 0.5), .none)
         XCTAssertTrue(machine.isVisible)
     }
+
+    func testConfiguredHideDelayControlsExitTiming() {
+        var machine = CornerHoverStateMachine()
+        machine.forceVisible(at: 0, grace: 0)
+
+        XCTAssertEqual(machine.update(
+            at: 1,
+            isInHotspot: false,
+            isInPanel: false,
+            isInteractionLocked: false,
+            revealDelay: 0.2,
+            hideDelay: 0.7
+        ), .none)
+        XCTAssertEqual(machine.update(
+            at: 1.69,
+            isInHotspot: false,
+            isInPanel: false,
+            isInteractionLocked: false,
+            revealDelay: 0.2,
+            hideDelay: 0.7
+        ), .none)
+        XCTAssertEqual(machine.update(
+            at: 1.7,
+            isInHotspot: false,
+            isInPanel: false,
+            isInteractionLocked: false,
+            revealDelay: 0.2,
+            hideDelay: 0.7
+        ), .hide)
+    }
 }

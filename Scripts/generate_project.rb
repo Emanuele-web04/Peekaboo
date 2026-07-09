@@ -3,9 +3,18 @@
 
 require 'xcodeproj'
 require 'fileutils'
+require 'optparse'
 
 ROOT = File.expand_path('..', __dir__)
 PROJECT_PATH = File.join(ROOT, 'Peekaboo.xcodeproj')
+
+OptionParser.new do |parser|
+  parser.banner = 'Usage: ruby Scripts/generate_project.rb'
+  parser.on('-h', '--help', 'Show this help without changing the project') do
+    puts parser
+    exit
+  end
+end.parse!
 
 FileUtils.rm_rf(PROJECT_PATH) if File.exist?(PROJECT_PATH)
 project = Xcodeproj::Project.new(PROJECT_PATH, false, 77)
@@ -78,6 +87,8 @@ ui_tests.build_configurations.each do |config|
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['TEST_TARGET_NAME'] = 'Peekaboo'
 end
+
+project.predictabilize_uuids
 
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(app)

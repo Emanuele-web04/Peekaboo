@@ -25,6 +25,7 @@
 		99C4C41249DAD8E8C261D14E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40085688326A223580A2607 /* AppSettings.swift */; };
 		A2F922BF94501A8110A8972F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB4D335F790340CC8EB7A07 /* SettingsView.swift */; };
 		A7E6192C0A2D4D7487C9B103 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C8163E7B2A4E62A31D9057 /* SettingsWindowController.swift */; };
+		B7F1C8D2A4E64B9C8D1E2F30 /* GlobalHotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2D9E3B5F74CAD9E2F3041 /* GlobalHotKey.swift */; };
 		A89306D423DF7974BA858183 /* PanelGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A48FB2FF2D0DA46AD9788B41 /* PanelGeometry.swift */; };
 		AC3058C6555D2460156720C6 /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8FA9164908CE5AEB6C744E /* TaskRowView.swift */; };
 		B0302AFD13BC76C6921FAEAB /* TaskComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CC45D7DEBF20137B22B238 /* TaskComposerView.swift */; };
@@ -92,6 +93,7 @@
 		C7A70177016A2830969C8160 /* TaskItem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TaskItem.swift; path = Models/TaskItem.swift; sourceTree = "<group>"; };
 		C883BEAB6EA4D6EBFEEDA63C /* CornerHoverStateMachine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CornerHoverStateMachine.swift; path = Services/CornerHoverStateMachine.swift; sourceTree = "<group>"; };
 		CF0B24EED5D647D096A96ACF /* LoginItemService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LoginItemService.swift; path = Services/LoginItemService.swift; sourceTree = "<group>"; };
+		C8A2D9E3B5F74CAD9E2F3041 /* GlobalHotKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = GlobalHotKey.swift; path = Services/GlobalHotKey.swift; sourceTree = "<group>"; };
 		D182AC199F1E1FE745DD8F94 /* CornerHoverStateMachineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CornerHoverStateMachineTests.swift; sourceTree = "<group>"; };
 		D744E51267E9B067B44EA8CB /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		DE8FA9164908CE5AEB6C744E /* TaskRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TaskRowView.swift; path = Views/Panel/TaskRowView.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 				C883BEAB6EA4D6EBFEEDA63C /* CornerHoverStateMachine.swift */,
 				5B86C57824CDE19F04C6FDEB /* DailyCleanupService.swift */,
 				CF0B24EED5D647D096A96ACF /* LoginItemService.swift */,
+				C8A2D9E3B5F74CAD9E2F3041 /* GlobalHotKey.swift */,
 				A48FB2FF2D0DA46AD9788B41 /* PanelGeometry.swift */,
 				C5800B41E1103926B8A3E2A7 /* PersistenceController.swift */,
 				BAA02E537E7460F26BF0F3C0 /* TaskStore.swift */,
@@ -373,6 +376,7 @@
 				1FE44BD8768A8ABC6D9700F6 /* CornerHoverStateMachine.swift in Sources */,
 				743232B766E894A3E8DF929A /* DailyCleanupService.swift in Sources */,
 				C5565EB052524EFC029DEE73 /* LoginItemService.swift in Sources */,
+				B7F1C8D2A4E64B9C8D1E2F30 /* GlobalHotKey.swift in Sources */,
 				A89306D423DF7974BA858183 /* PanelGeometry.swift in Sources */,
 				2516385D901EEA112E32A60A /* PersistenceController.swift in Sources */,
 				3407F3D3BFE028805A8A202D /* TaskStore.swift in Sources */,

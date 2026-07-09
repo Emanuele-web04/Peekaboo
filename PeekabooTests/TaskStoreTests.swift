@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 final class TaskStoreTests: XCTestCase {
     func testTaskDragPayloadExportsInternalDataAndPlainText() {
-        let payload = TaskDragPayload(id: UUID(), title: "Paste me")
+        let payload = TaskDragPayload(title: "Paste me")
         let provider = payload.itemProvider()
 
         XCTAssertTrue(provider.hasItemConformingToTypeIdentifier(UTType.text.identifier))
@@ -30,6 +30,16 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertEqual(task?.status, .todo)
         XCTAssertEqual(task?.priority, TaskPriority.none)
         XCTAssertEqual(store.tasks.count, 1)
+    }
+
+    @MainActor
+    func testCreateReportsPersistenceFailureAndRollsBack() throws {
+        struct PersistenceFailure: Error {}
+        let store = try makeTestStore(persist: { _ in throw PersistenceFailure() })
+
+        XCTAssertNil(store.create(title: "Must not disappear"))
+        XCTAssertTrue(store.tasks.isEmpty)
+        XCTAssertNotNil(store.lastErrorMessage)
     }
 
     @MainActor
@@ -138,6 +148,29 @@ final class TaskStoreTests: XCTestCase {
         store.setStatus(.backlog, for: idea)
         store.performDoubleClickAction(idea)
         XCTAssertEqual(idea.status, .todo)
+    }
+
+    @MainActor
+    func testScopeSnapshotIsTheSingleSourceForSectionsAndCounts() throws {
+        let store = try makeTestStore()
+        _ = store.create(title: "Todo")
+        _ = store.create(title: "Progress")
+        _ = store.create(title: "Done")
+        _ = store.create(title: "Idea", status: .backlog)
+        let progress = try XCTUnwrap(store.tasks.first { $0.title == "Progress" })
+        let done = try XCTUnwrap(store.tasks.first { $0.title == "Done" })
+        store.setStatus(.inProgress, for: progress)
+        store.setStatus(.done, for: done)
+
+        let taskSnapshot = store.snapshot(for: .tasks)
+        XCTAssertEqual(taskSnapshot.visibleCount, 3)
+        XCTAssertEqual(taskSnapshot.activeCount, 2)
+        XCTAssertEqual(taskSnapshot.sections.map(\.status), [.inProgress, .todo, .done])
+
+        let backlogSnapshot = store.snapshot(for: .backlog)
+        XCTAssertEqual(backlogSnapshot.visibleCount, 1)
+        XCTAssertEqual(backlogSnapshot.activeCount, 1)
+        XCTAssertEqual(backlogSnapshot.sections.map(\.status), [.backlog])
     }
 
     @MainActor

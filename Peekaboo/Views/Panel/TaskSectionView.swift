@@ -15,6 +15,7 @@ struct TaskSectionView: View {
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                     .contentTransition(.numericText())
+                    .accessibilityIdentifier("task-section-\(status.rawValue)")
                 Spacer()
             }
             .frame(height: 24)

@@ -38,7 +38,7 @@ final class TaskItem {
     }
 
     var priority: TaskPriority {
-        get { TaskPriority(rawValue: priorityRaw) ?? .medium }
+        get { TaskPriority(rawValue: priorityRaw) ?? .none }
         set { priorityRaw = newValue.rawValue }
     }
 }

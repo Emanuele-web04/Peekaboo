@@ -8,8 +8,10 @@ struct PeekPanelView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        let snapshot = store.snapshot(for: uiState.selectedScope)
+
         VStack(spacing: 0) {
-            header
+            header(activeCount: snapshot.activeCount)
             scopePicker
 
             if uiState.isComposerPresented {
@@ -19,11 +21,11 @@ struct PeekPanelView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            if visibleTaskCount == 0 {
+            if snapshot.visibleCount == 0 {
                 emptyState
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else {
-                taskList
+                taskList(sections: snapshot.sections)
                     .transition(.opacity)
             }
 
@@ -43,15 +45,15 @@ struct PeekPanelView: View {
         .animation(reduceMotion ? nil : PeekabooMotion.quick, value: uiState.selectedScope)
     }
 
-    private var header: some View {
+    private func header(activeCount: Int) -> some View {
         HStack(spacing: 8) {
             Text("Peekaboo")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
-            Text("· \(activeSubtitle)")
+            Text("· \(activeSubtitle(count: activeCount))")
                 .font(.system(size: 10, design: .rounded))
                 .foregroundStyle(.tertiary)
                 .contentTransition(.numericText())
-                .animation(reduceMotion ? nil : PeekabooMotion.quick, value: activeSubtitle)
+                .animation(reduceMotion ? nil : PeekabooMotion.quick, value: activeCount)
 
             Spacer()
 
@@ -148,14 +150,16 @@ struct PeekPanelView: View {
         }
     }
 
-    private var taskList: some View {
+    private func taskList(sections: [TaskSectionSnapshot]) -> some View {
         ScrollView {
             LazyVStack(spacing: 7) {
-                ForEach(uiState.selectedScope.statuses) { status in
-                    let tasks = store.orderedTasks(for: status)
-                    if !tasks.isEmpty {
-                        TaskSectionView(store: store, uiState: uiState, status: status, tasks: tasks)
-                    }
+                ForEach(sections) { section in
+                    TaskSectionView(
+                        store: store,
+                        uiState: uiState,
+                        status: section.status,
+                        tasks: section.tasks
+                    )
                 }
             }
             .padding(.horizontal, PeekabooStyle.horizontalPadding - 4)
@@ -178,20 +182,13 @@ struct PeekPanelView: View {
         .padding(.bottom, 18)
     }
 
-    private var activeSubtitle: String {
-        let count = store.tasks.filter {
-            uiState.selectedScope.countedStatuses.contains($0.status)
-        }.count
+    private func activeSubtitle(count: Int) -> String {
         switch uiState.selectedScope {
         case .tasks:
             return count == 1 ? "1 Active Task" : "\(count) Active Tasks"
         case .backlog:
             return count == 1 ? "1 Idea" : "\(count) Ideas"
         }
-    }
-
-    private var visibleTaskCount: Int {
-        store.tasks.filter { uiState.selectedScope.statuses.contains($0.status) }.count
     }
 
     private var newItemTitle: String {

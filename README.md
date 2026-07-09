@@ -12,11 +12,12 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 
 - Reveals from any screen corner after a configurable delay
 - Global `Control–Option–Space` shortcut for creating a task
-- To do, In Progress and Done states
+- Separate Tasks and Backlog scopes, with To do, In Progress and Done states
 - None, Low, Medium and High priorities
 - Local SwiftData persistence
 - Automatic cleanup of completed tasks after the day changes
 - Multi-display and full-screen Space support
+- Configurable reveal and hide delays
 - Optional translucent or solid panel
 - Launch at login support
 - Native menu bar app with no Dock icon
@@ -36,11 +37,13 @@ Peekaboo lives in the menu bar and reveals a lightweight panel when the pointer 
 5. Run the app.
 
 Choose a corner and reveal delay in Settings. Press `Control–Option–Space` from anywhere in macOS to reveal Peekaboo with the new-task field focused.
+Press `Command–,` while Peekaboo is focused to open Settings.
 
 ## Interactions
 
 - Double-click a To do task to move it to In Progress.
 - Double-click an In Progress task to move it back to To do.
+- Click or double-click a Backlog idea to promote it to To do.
 - Click the priority-colored circle to complete a task.
 - Click the circle on a completed task to restore it.
 - Drag tasks to reorder them within the same status and priority group.
@@ -58,7 +61,7 @@ xcodebuild test \
 
 ## Project generation
 
-`Scripts/generate_project.rb` generates the Xcode project using the Ruby `xcodeproj` gem. Run it after adding source files that need to be included in the project.
+`Scripts/generate_project.rb` generates the Xcode project using the Ruby `xcodeproj` gem and stable UUIDs. Run it after adding source files that need to be included in the project. Use `--help` to inspect the command without changing the project.
 
 ## License
 

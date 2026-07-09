@@ -3,9 +3,12 @@ import SwiftData
 @testable import Peekaboo
 
 @MainActor
-func makeTestStore(now: @escaping () -> Date = Date.init) throws -> TaskStore {
+func makeTestStore(
+    now: @escaping () -> Date = Date.init,
+    persist: @escaping (ModelContext) throws -> Void = { try $0.save() }
+) throws -> TaskStore {
     let container = try PersistenceController.makeContainer(inMemory: true)
-    return TaskStore(container: container, now: now)
+    return TaskStore(container: container, now: now, persist: persist)
 }
 
 final class MutableNow {

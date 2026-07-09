@@ -13,17 +13,6 @@ enum PeekabooMotion {
     static let background = Animation.easeInOut(duration: 0.22)
 }
 
-extension TaskStatus {
-    var color: Color {
-        switch self {
-        case .todo: .secondary
-        case .inProgress: .orange
-        case .done: .green
-        case .backlog: .secondary
-        }
-    }
-}
-
 extension TaskPriority {
     var color: Color {
         switch self {
@@ -32,19 +21,6 @@ extension TaskPriority {
         case .medium: .orange
         case .high: .red
         }
-    }
-}
-
-struct PriorityBadge: View {
-    let priority: TaskPriority
-
-    var body: some View {
-        Circle()
-            .fill(priority.color)
-            .frame(width: 6, height: 6)
-            .frame(width: 16, height: 16)
-            .contentShape(Rectangle())
-            .accessibilityLabel("\(priority.title) priority")
     }
 }
 

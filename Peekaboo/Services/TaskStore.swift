@@ -2,17 +2,37 @@ import Combine
 import Foundation
 import SwiftData
 
+struct TaskSectionSnapshot: Identifiable {
+    let status: TaskStatus
+    let tasks: [TaskItem]
+
+    var id: TaskStatus { status }
+}
+
+struct TaskScopeSnapshot {
+    let sections: [TaskSectionSnapshot]
+    let visibleCount: Int
+    let activeCount: Int
+}
+
 @MainActor
 final class TaskStore: ObservableObject {
     @Published private(set) var tasks: [TaskItem] = []
     @Published private(set) var lastErrorMessage: String?
+    @Published private(set) var revision: UInt64 = 0
 
     private let context: ModelContext
     private let now: () -> Date
+    private let persist: (ModelContext) throws -> Void
 
-    init(container: ModelContainer, now: @escaping () -> Date = Date.init) {
+    init(
+        container: ModelContainer,
+        now: @escaping () -> Date = Date.init,
+        persist: @escaping (ModelContext) throws -> Void = { try $0.save() }
+    ) {
         context = ModelContext(container)
         self.now = now
+        self.persist = persist
         refresh()
     }
 
@@ -35,61 +55,67 @@ final class TaskStore: ObservableObject {
         )
         context.insert(task)
         tasks.append(task)
-        save()
+        guard save() else { return nil }
         return task
     }
 
-    func rename(_ task: TaskItem, to title: String) {
+    @discardableResult
+    func rename(_ task: TaskItem, to title: String) -> Bool {
         let normalizedTitle = Self.normalized(title)
-        guard !normalizedTitle.isEmpty else { return }
-        objectWillChange.send()
+        guard !normalizedTitle.isEmpty else { return false }
+        guard task.title != normalizedTitle else { return true }
         task.title = normalizedTitle
         task.updatedAt = now()
-        save()
+        return save()
     }
 
-    func setPriority(_ priority: TaskPriority, for task: TaskItem) {
-        guard task.priority != priority else { return }
-        objectWillChange.send()
+    @discardableResult
+    func setPriority(_ priority: TaskPriority, for task: TaskItem) -> Bool {
+        guard task.priority != priority else { return true }
         task.manualOrder = nextManualOrder(status: task.status, priority: priority, excluding: task.id)
         task.priority = priority
         task.updatedAt = now()
-        save()
+        return save()
     }
 
-    func setStatus(_ status: TaskStatus, for task: TaskItem) {
-        guard task.status != status else { return }
-        objectWillChange.send()
+    @discardableResult
+    func setStatus(_ status: TaskStatus, for task: TaskItem) -> Bool {
+        guard task.status != status else { return true }
         task.manualOrder = nextManualOrder(status: status, priority: task.priority, excluding: task.id)
         task.status = status
         task.updatedAt = now()
         task.completedAt = status == .done ? now() : nil
-        save()
+        return save()
     }
 
-    func advanceToInProgress(_ task: TaskItem) {
-        guard task.status == .todo else { return }
-        setStatus(.inProgress, for: task)
+    @discardableResult
+    func advanceToInProgress(_ task: TaskItem) -> Bool {
+        guard task.status == .todo else { return false }
+        return setStatus(.inProgress, for: task)
     }
 
-    func performDoubleClickAction(_ task: TaskItem) {
-        guard let destination = task.status.doubleClickDestination else { return }
-        setStatus(destination, for: task)
+    @discardableResult
+    func performDoubleClickAction(_ task: TaskItem) -> Bool {
+        guard let destination = task.status.doubleClickDestination else { return false }
+        return setStatus(destination, for: task)
     }
 
-    func markDone(_ task: TaskItem) {
-        guard task.status != .done else { return }
-        setStatus(.done, for: task)
+    @discardableResult
+    func markDone(_ task: TaskItem) -> Bool {
+        guard task.status != .done else { return true }
+        return setStatus(.done, for: task)
     }
 
-    func performPrimaryAction(_ task: TaskItem) {
+    @discardableResult
+    func performPrimaryAction(_ task: TaskItem) -> Bool {
         setStatus(task.status.primaryActionDestination, for: task)
     }
 
-    func delete(_ task: TaskItem) {
+    @discardableResult
+    func delete(_ task: TaskItem) -> Bool {
         context.delete(task)
         tasks.removeAll { $0.id == task.id }
-        save()
+        return save()
     }
 
     @discardableResult
@@ -97,10 +123,11 @@ final class TaskStore: ObservableObject {
         let expired = tasks.filter { task in
             task.status == .done && (task.completedAt.map { $0 < cutoff } ?? false)
         }
+        guard !expired.isEmpty else { return 0 }
+        let expiredIDs = Set(expired.map(\.id))
         expired.forEach(context.delete)
-        tasks.removeAll { task in expired.contains { $0.id == task.id } }
-        if !expired.isEmpty { save() }
-        return expired.count
+        tasks.removeAll { expiredIDs.contains($0.id) }
+        return save() ? expired.count : 0
     }
 
     func orderedTasks(for status: TaskStatus) -> [TaskItem] {
@@ -127,6 +154,22 @@ final class TaskStore: ObservableObject {
             }
     }
 
+    func snapshot(for scope: TaskScope) -> TaskScopeSnapshot {
+        let sections = scope.statuses.compactMap { status -> TaskSectionSnapshot? in
+            let statusTasks = orderedTasks(for: status)
+            guard !statusTasks.isEmpty else { return nil }
+            return TaskSectionSnapshot(status: status, tasks: statusTasks)
+        }
+        let activeStatuses = Set(scope.countedStatuses)
+        return TaskScopeSnapshot(
+            sections: sections,
+            visibleCount: sections.reduce(0) { $0 + $1.tasks.count },
+            activeCount: sections.reduce(0) { count, section in
+                count + (activeStatuses.contains(section.status) ? section.tasks.count : 0)
+            }
+        )
+    }
+
     @discardableResult
     func reorder(taskID: UUID, relativeTo targetID: UUID) -> Bool {
         guard taskID != targetID,
@@ -146,7 +189,6 @@ final class TaskStore: ObservableObject {
         let movedTask = group.remove(at: sourceIndex)
         group.insert(movedTask, at: min(targetIndex, group.count))
 
-        objectWillChange.send()
         for (index, item) in group.enumerated() {
             item.manualOrder = Int64(group.count - index)
         }
@@ -156,7 +198,7 @@ final class TaskStore: ObservableObject {
 
     func refresh() {
         do {
-            tasks = try context.fetch(FetchDescriptor<TaskItem>())
+            try reloadTasks()
             lastErrorMessage = nil
         } catch {
             lastErrorMessage = error.localizedDescription
@@ -166,15 +208,26 @@ final class TaskStore: ObservableObject {
     @discardableResult
     private func save() -> Bool {
         do {
-            try context.save()
+            try persist(context)
             lastErrorMessage = nil
+            revision &+= 1
             return true
         } catch {
-            lastErrorMessage = error.localizedDescription
+            let saveError = error.localizedDescription
             context.rollback()
-            refresh()
+            do {
+                try reloadTasks()
+                lastErrorMessage = saveError
+            } catch {
+                lastErrorMessage = "\(saveError) · Reload failed: \(error.localizedDescription)"
+            }
             return false
         }
+    }
+
+    private func reloadTasks() throws {
+        tasks = try context.fetch(FetchDescriptor<TaskItem>())
+        revision &+= 1
     }
 
     private func nextManualOrder(

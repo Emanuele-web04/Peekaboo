@@ -23,17 +23,13 @@ final class PeekabooUITests: XCTestCase {
         let title = app.staticTexts["Ship prototype"]
         XCTAssertTrue(title.waitForExistence(timeout: 2))
         title.doubleClick()
-        let inProgressSection = app.staticTexts.matching(
-            NSPredicate(format: "value BEGINSWITH %@", "in progress")
-        ).firstMatch
+        let inProgressSection = app.staticTexts["task-section-inProgress"]
         XCTAssertTrue(inProgressSection.waitForExistence(timeout: 2))
 
         let markDone = app.buttons.matching(NSPredicate(format: "label == %@", "Mark done")).firstMatch
         XCTAssertTrue(markDone.waitForExistence(timeout: 2))
         markDone.click()
-        let doneSection = app.staticTexts.matching(
-            NSPredicate(format: "value BEGINSWITH %@", "done")
-        ).firstMatch
+        let doneSection = app.staticTexts["task-section-done"]
         XCTAssertTrue(doneSection.waitForExistence(timeout: 2))
 
         let actions = app.menuButtons["Edit task"]

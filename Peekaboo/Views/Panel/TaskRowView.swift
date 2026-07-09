@@ -98,7 +98,7 @@ struct TaskRowView: View {
 
     private func dragItemProvider() -> NSItemProvider {
         uiState.beginDragging(task)
-        return TaskDragPayload(id: task.id, title: task.title).itemProvider()
+        return TaskDragPayload(title: task.title).itemProvider()
     }
 
     private func acceptDrop(from providers: [NSItemProvider]) -> Bool {
@@ -192,8 +192,9 @@ struct TaskRowView: View {
     }
 
     private func commitRename() {
-        store.rename(task, to: editTitle)
-        uiState.endEditing()
+        if store.rename(task, to: editTitle) {
+            uiState.endEditing()
+        }
     }
 
     private func cancelRename() {
