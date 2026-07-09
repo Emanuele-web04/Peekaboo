@@ -4,6 +4,7 @@ enum PeekabooStyle {
     static let panelCornerRadius: CGFloat = 18
     static let horizontalPadding: CGFloat = 16
     static let rowHeight: CGFloat = 32
+    static let taskSpacing: CGFloat = 4
 }
 
 enum PeekabooMotion {

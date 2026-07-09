@@ -20,14 +20,16 @@ struct TaskSectionView: View {
             .frame(height: 24)
             .padding(.horizontal, 4)
 
-            ForEach(tasks) { task in
-                TaskRowView(store: store, uiState: uiState, task: task)
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .scale(scale: 0.96).combined(with: .opacity)
+            VStack(spacing: PeekabooStyle.taskSpacing) {
+                ForEach(tasks) { task in
+                    TaskRowView(store: store, uiState: uiState, task: task)
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .top).combined(with: .opacity),
+                                removal: .scale(scale: 0.96).combined(with: .opacity)
+                            )
                         )
-                    )
+                }
             }
         }
         .animation(reduceMotion ? nil : PeekabooMotion.spring, value: tasks.map(\.id))

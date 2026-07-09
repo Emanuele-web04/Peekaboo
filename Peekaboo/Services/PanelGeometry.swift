@@ -2,9 +2,9 @@ import CoreGraphics
 
 enum PanelGeometry {
     static let triggerSize: CGFloat = 16
-    static let panelWidth: CGFloat = 320
-    static let minimumHeight: CGFloat = 360
-    static let maximumHeight: CGFloat = 680
+    static let panelWidth: CGFloat = 332
+    static let minimumHeight: CGFloat = 380
+    static let maximumHeight: CGFloat = 700
     static let screenInset: CGFloat = 12
 
     static func hotspot(in screenFrame: CGRect, corner: ScreenCorner, size: CGFloat = triggerSize) -> CGRect {
@@ -71,9 +71,13 @@ enum PanelGeometry {
     static func preferredHeight(taskCount: Int, sectionCount: Int, isComposing: Bool) -> CGFloat {
         let header: CGFloat = 44
         let composer: CGFloat = isComposing ? 70 : 0
+        let taskGaps = max(taskCount - sectionCount, 0)
         let content: CGFloat = taskCount == 0
             ? 90
-            : CGFloat(taskCount) * 32 + CGFloat(sectionCount) * 24 + 10
+            : CGFloat(taskCount) * PeekabooStyle.rowHeight
+                + CGFloat(taskGaps) * PeekabooStyle.taskSpacing
+                + CGFloat(sectionCount) * 24
+                + 10
         return min(max(header + composer + content + 16, minimumHeight), maximumHeight)
     }
 }
