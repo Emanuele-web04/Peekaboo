@@ -2,6 +2,12 @@ import XCTest
 @testable import Peekaboo
 
 final class CornerHoverStateMachineTests: XCTestCase {
+    func testAuxiliaryMouseButtonDoesNotCountAsPrimaryButton() {
+        XCTAssertFalse(MouseButtonState.isPrimaryPressed(in: 1 << 5))
+        XCTAssertTrue(MouseButtonState.isPrimaryPressed(in: 1))
+        XCTAssertTrue(MouseButtonState.isPrimaryPressed(in: (1 << 5) | 1))
+    }
+
     func testRevealsOnlyAfterConfiguredDwell() {
         var machine = CornerHoverStateMachine()
 
