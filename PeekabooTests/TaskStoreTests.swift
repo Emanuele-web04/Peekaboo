@@ -100,4 +100,44 @@ final class TaskStoreTests: XCTestCase {
         store.toggleProgress(task)
         XCTAssertEqual(task.status, .done)
     }
+
+    @MainActor
+    func testReorderWithinSameStatusAndPriorityPersists() throws {
+        let clock = MutableNow(Date(timeIntervalSince1970: 1_000))
+        let store = try makeTestStore(now: { clock.value })
+        let first = try XCTUnwrap(store.create(title: "First", priority: .medium))
+        clock.value = Date(timeIntervalSince1970: 1_100)
+        let second = try XCTUnwrap(store.create(title: "Second", priority: .medium))
+        clock.value = Date(timeIntervalSince1970: 1_200)
+        let third = try XCTUnwrap(store.create(title: "Third", priority: .medium))
+
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [third.id, second.id, first.id])
+        XCTAssertTrue(store.reorder(taskID: third.id, relativeTo: first.id))
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id, first.id, third.id])
+
+        clock.value = Date(timeIntervalSince1970: 1_300)
+        store.rename(third, to: "Third renamed")
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id, first.id, third.id])
+
+        clock.value = Date(timeIntervalSince1970: 1_400)
+        let newest = try XCTUnwrap(store.create(title: "Newest", priority: .medium))
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [newest.id, second.id, first.id, third.id])
+
+        store.refresh()
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [newest.id, second.id, first.id, third.id])
+    }
+
+    @MainActor
+    func testReorderRejectsIncompatibleAndDegenerateDrops() throws {
+        let store = try makeTestStore()
+        let medium = try XCTUnwrap(store.create(title: "Medium", priority: .medium))
+        let high = try XCTUnwrap(store.create(title: "High", priority: .high))
+        let anotherMedium = try XCTUnwrap(store.create(title: "Another", priority: .medium))
+        store.setStatus(.inProgress, for: anotherMedium)
+
+        XCTAssertFalse(store.reorder(taskID: medium.id, relativeTo: medium.id))
+        XCTAssertFalse(store.reorder(taskID: medium.id, relativeTo: high.id))
+        XCTAssertFalse(store.reorder(taskID: medium.id, relativeTo: anotherMedium.id))
+        XCTAssertFalse(store.reorder(taskID: UUID(), relativeTo: medium.id))
+    }
 }

@@ -60,6 +60,15 @@ struct TaskRowView: View {
         )
         .contentShape(Rectangle())
         .contextMenu { taskActions }
+        .draggable(task.id.uuidString) {
+            dragPreview
+        }
+        .dropDestination(for: String.self) { identifiers, _ in
+            guard let rawID = identifiers.first, let draggedID = UUID(uuidString: rawID) else {
+                return false
+            }
+            return store.reorder(taskID: draggedID, relativeTo: task.id)
+        }
         .onHover { hovering in
             withAnimation(reduceMotion ? nil : PeekabooMotion.quick) {
                 isHovering = hovering
@@ -73,6 +82,20 @@ struct TaskRowView: View {
             DispatchQueue.main.async { isRenameFocused = true }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var dragPreview: some View {
+        HStack(spacing: 7) {
+            Circle()
+                .stroke(task.priority.color, lineWidth: 1.5)
+                .frame(width: 13, height: 13)
+            Text(task.title)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
     @ViewBuilder

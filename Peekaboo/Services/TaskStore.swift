@@ -26,7 +26,8 @@ final class TaskStore: ObservableObject {
             title: normalizedTitle,
             status: .todo,
             priority: priority,
-            createdAt: timestamp
+            createdAt: timestamp,
+            manualOrder: nextManualOrder(status: .todo, priority: priority)
         )
         context.insert(task)
         tasks.append(task)
@@ -46,6 +47,7 @@ final class TaskStore: ObservableObject {
     func setPriority(_ priority: TaskPriority, for task: TaskItem) {
         guard task.priority != priority else { return }
         objectWillChange.send()
+        task.manualOrder = nextManualOrder(status: task.status, priority: priority, excluding: task.id)
         task.priority = priority
         task.updatedAt = now()
         save()
@@ -54,6 +56,7 @@ final class TaskStore: ObservableObject {
     func setStatus(_ status: TaskStatus, for task: TaskItem) {
         guard task.status != status else { return }
         objectWillChange.send()
+        task.manualOrder = nextManualOrder(status: status, priority: task.priority, excluding: task.id)
         task.status = status
         task.updatedAt = now()
         task.completedAt = status == .done ? now() : nil
@@ -109,11 +112,48 @@ final class TaskStore: ObservableObject {
                 if lhs.priority.sortRank != rhs.priority.sortRank {
                     return lhs.priority.sortRank > rhs.priority.sortRank
                 }
+                switch (lhs.manualOrder, rhs.manualOrder) {
+                case let (.some(lhsOrder), .some(rhsOrder)) where lhsOrder != rhsOrder:
+                    return lhsOrder > rhsOrder
+                case (.some, .none):
+                    return true
+                case (.none, .some):
+                    return false
+                default:
+                    break
+                }
                 if lhs.updatedAt != rhs.updatedAt {
                     return lhs.updatedAt > rhs.updatedAt
                 }
                 return lhs.id.uuidString < rhs.id.uuidString
             }
+    }
+
+    @discardableResult
+    func reorder(taskID: UUID, relativeTo targetID: UUID) -> Bool {
+        guard taskID != targetID,
+              let task = tasks.first(where: { $0.id == taskID }),
+              let target = tasks.first(where: { $0.id == targetID }),
+              task.status == target.status,
+              task.priority == target.priority else {
+            return false
+        }
+
+        var group = orderedTasks(for: task.status).filter { $0.priority == task.priority }
+        guard let sourceIndex = group.firstIndex(where: { $0.id == taskID }),
+              let targetIndex = group.firstIndex(where: { $0.id == targetID }) else {
+            return false
+        }
+
+        let movedTask = group.remove(at: sourceIndex)
+        group.insert(movedTask, at: min(targetIndex, group.count))
+
+        objectWillChange.send()
+        for (index, item) in group.enumerated() {
+            item.manualOrder = Int64(group.count - index)
+        }
+        task.updatedAt = now()
+        return save()
     }
 
     func refresh() {
@@ -125,15 +165,38 @@ final class TaskStore: ObservableObject {
         }
     }
 
-    private func save() {
+    @discardableResult
+    private func save() -> Bool {
         do {
             try context.save()
             lastErrorMessage = nil
+            return true
         } catch {
             lastErrorMessage = error.localizedDescription
             context.rollback()
             refresh()
+            return false
         }
+    }
+
+    private func nextManualOrder(
+        status: TaskStatus,
+        priority: TaskPriority,
+        excluding excludedID: UUID? = nil
+    ) -> Int64? {
+        let group = tasks.filter {
+            $0.id != excludedID && $0.status == status && $0.priority == priority
+        }
+        guard let maximum = group.compactMap(\.manualOrder).max() else { return nil }
+        guard maximum == .max else { return maximum + 1 }
+
+        let orderedGroup = orderedTasks(for: status).filter {
+            $0.id != excludedID && $0.priority == priority
+        }
+        for (index, item) in orderedGroup.enumerated() {
+            item.manualOrder = Int64(orderedGroup.count - index)
+        }
+        return Int64(orderedGroup.count + 1)
     }
 
     private static func normalized(_ title: String) -> String {

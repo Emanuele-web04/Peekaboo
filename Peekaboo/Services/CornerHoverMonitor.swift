@@ -91,13 +91,14 @@ final class CornerHoverMonitor {
                 .contains(location)
         } ?? false
         let isInPanel = panelController.visibleFrame?.contains(location) ?? false
+        let isMouseButtonPressed = NSEvent.pressedMouseButtons != 0
 
         let uptime = ProcessInfo.processInfo.systemUptime
         let transition = stateMachine.update(
             at: uptime,
             isInHotspot: isInHotspot,
             isInPanel: isInPanel,
-            isInteractionLocked: uiState.isInteractionLocked,
+            isInteractionLocked: uiState.isInteractionLocked || isMouseButtonPressed,
             revealDelay: settings.revealDelay
         )
 

@@ -61,8 +61,40 @@ final class PeekabooUITests: XCTestCase {
         titleField.typeText(longTitle)
         titleField.typeKey(.return, modifierFlags: [])
 
-        let title = app.staticTexts[longTitle]
+        let title = app.staticTexts.matching(
+            NSPredicate(format: "value BEGINSWITH %@", "A long task title")
+        ).firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: 2))
         XCTAssertGreaterThan(title.frame.height, 20)
+    }
+
+    func testDragReordersTasksWithMatchingPriority() throws {
+        addTask(named: "Alpha")
+        addTask(named: "Beta")
+
+        let first = app.staticTexts["Alpha"]
+        let second = app.staticTexts["Beta"]
+        XCTAssertTrue(first.waitForExistence(timeout: 2))
+        XCTAssertTrue(second.waitForExistence(timeout: 2))
+        XCTAssertLessThan(second.frame.minY, first.frame.minY)
+
+        second.press(forDuration: 0.6, thenDragTo: first)
+
+        let deadline = Date().addingTimeInterval(2)
+        while second.frame.minY <= first.frame.minY && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        XCTAssertGreaterThan(second.frame.minY, first.frame.minY)
+    }
+
+    private func addTask(named title: String) {
+        let addButton = app.buttons["add-task-button"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 2))
+        addButton.click()
+
+        let titleField = app.textFields["new-task-title"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 2))
+        titleField.typeText(title)
+        titleField.typeKey(.return, modifierFlags: [])
     }
 }

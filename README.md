@@ -43,6 +43,7 @@ Choose a corner and reveal delay in Settings. Press `Control–Option–Space` f
 - Double-click an In Progress task to move it back to To do.
 - Click the priority-colored circle to complete a task.
 - Click the circle on a completed task to restore it.
+- Drag tasks to reorder them within the same status and priority group.
 - Use the trailing ellipsis to edit, move, reprioritize or delete a task.
 
 ## Tests

@@ -10,6 +10,7 @@ final class TaskItem {
     var createdAt: Date
     var updatedAt: Date
     var completedAt: Date?
+    var manualOrder: Int64?
 
     init(
         id: UUID = UUID(),
@@ -18,7 +19,8 @@ final class TaskItem {
         priority: TaskPriority = .medium,
         createdAt: Date = Date(),
         updatedAt: Date? = nil,
-        completedAt: Date? = nil
+        completedAt: Date? = nil,
+        manualOrder: Int64? = nil
     ) {
         self.id = id
         self.title = title
@@ -27,6 +29,7 @@ final class TaskItem {
         self.createdAt = createdAt
         self.updatedAt = updatedAt ?? createdAt
         self.completedAt = completedAt
+        self.manualOrder = manualOrder
     }
 
     var status: TaskStatus {
