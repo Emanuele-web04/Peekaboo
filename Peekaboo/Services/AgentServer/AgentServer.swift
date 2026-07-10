@@ -20,13 +20,15 @@ final class AgentServer: ObservableObject {
     @Published private(set) var state: State = .stopped
 
     private let port: UInt16
+    private let bearerToken: String
     private let handler: MCPRequestHandler
     private let queue = DispatchQueue(label: "com.emanueledipietro.Peekaboo.AgentServer")
     private let logger = Logger(subsystem: "com.emanueledipietro.Peekaboo", category: "AgentServer")
     private var listener: NWListener?
 
-    init(port: UInt16, handler: MCPRequestHandler) {
+    init(port: UInt16, bearerToken: String, handler: MCPRequestHandler) {
         self.port = port
+        self.bearerToken = bearerToken
         self.handler = handler
     }
 
@@ -87,7 +89,7 @@ final class AgentServer: ObservableObject {
         state = .stopped
     }
 
-    nonisolated private func receive(on connection: NWConnection, buffer: Data) {
+    nonisolated private func receive(on connection: NWConnection, buffer: Data, searchedBytes: Int = 0) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65_536) { [weak self] data, _, isComplete, error in
             guard let self else {
                 connection.cancel()
@@ -101,16 +103,16 @@ final class AgentServer: ObservableObject {
                 self.send(status: 413, reason: "Content Too Large", body: nil, on: connection)
                 return
             }
-            switch AgentHTTPRequest.parse(buffer) {
+            switch AgentHTTPRequest.parse(buffer, searchedBytes: searchedBytes) {
             case let .request(request):
                 self.route(request, on: connection)
             case .invalid:
                 self.send(status: 400, reason: "Bad Request", body: nil, on: connection)
-            case .incomplete:
+            case let .incomplete(searchedBytes):
                 if isComplete || error != nil {
                     connection.cancel()
                 } else {
-                    self.receive(on: connection, buffer: buffer)
+                    self.receive(on: connection, buffer: buffer, searchedBytes: searchedBytes)
                 }
             }
         }
@@ -129,6 +131,19 @@ final class AgentServer: ObservableObject {
         }
         guard request.method == "POST" else {
             send(status: 405, reason: "Method Not Allowed", body: nil, on: connection, extraHeaders: "Allow: POST\r\n")
+            return
+        }
+        guard AgentRequestSecurity.isAuthorized(
+            headers: request.headers,
+            bearerToken: bearerToken
+        ) else {
+            send(
+                status: 401,
+                reason: "Unauthorized",
+                body: nil,
+                on: connection,
+                extraHeaders: "WWW-Authenticate: Bearer\r\n"
+            )
             return
         }
         Task { @MainActor [weak self] in
@@ -169,5 +184,27 @@ final class AgentServer: ObservableObject {
         connection.send(content: response, completion: .contentProcessed { _ in
             connection.cancel()
         })
+    }
+}
+
+enum AgentRequestSecurity {
+    static func isAuthorized(headers: [String: String], bearerToken: String) -> Bool {
+        guard let host = headers["host"]?.lowercased(),
+              host == "127.0.0.1" || host.hasPrefix("127.0.0.1:") else {
+            return false
+        }
+        guard let authorization = headers["authorization"] else { return false }
+        return constantTimeEquals(authorization, "Bearer \(bearerToken)")
+    }
+
+    private static func constantTimeEquals(_ lhs: String, _ rhs: String) -> Bool {
+        let lhsBytes = Array(lhs.utf8)
+        let rhsBytes = Array(rhs.utf8)
+        guard lhsBytes.count == rhsBytes.count else { return false }
+        var difference: UInt8 = 0
+        for (left, right) in zip(lhsBytes, rhsBytes) {
+            difference |= left ^ right
+        }
+        return difference == 0
     }
 }

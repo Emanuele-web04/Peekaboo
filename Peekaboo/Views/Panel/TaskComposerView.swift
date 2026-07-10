@@ -98,9 +98,6 @@ struct TaskComposerView: View {
     }
 
     private var placeholder: String {
-        switch uiState.selectedScope {
-        case .tasks: "What needs doing?"
-        case .backlog: "Capture an idea…"
-        }
+        uiState.selectedScope.composerPlaceholder
     }
 }

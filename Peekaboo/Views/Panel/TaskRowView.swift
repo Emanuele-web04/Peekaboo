@@ -62,7 +62,7 @@ struct TaskRowView: View {
         } preview: {
             dragPreview
         }
-        .onDrop(of: [.utf8PlainText], isTargeted: nil) { providers, _ in
+        .onDrop(of: [TaskDragPayload.internalTaskType], isTargeted: nil) { providers, _ in
             acceptDrop(from: providers)
         }
         .onHover { hovering in
@@ -95,18 +95,14 @@ struct TaskRowView: View {
 
     private func dragItemProvider() -> NSItemProvider {
         uiState.beginDragging(task)
-        return TaskDragPayload(title: task.title).itemProvider()
+        return TaskDragPayload(taskID: task.id, title: task.title).itemProvider()
     }
 
     private func acceptDrop(from providers: [NSItemProvider]) -> Bool {
-        guard providers.contains(where: {
-            $0.hasItemConformingToTypeIdentifier(UTType.utf8PlainText.identifier)
-        }), let draggedTaskID = uiState.draggedTaskID else {
-            return false
+        TaskDragPayload.loadTaskID(from: providers) { draggedTaskID in
+            uiState.endDragging()
+            _ = store.drop(taskID: draggedTaskID, onto: task.id)
         }
-
-        uiState.endDragging()
-        return store.reorder(taskID: draggedTaskID, relativeTo: task.id)
     }
 
     @ViewBuilder
@@ -143,48 +139,9 @@ struct TaskRowView: View {
         }
     }
 
-    @ViewBuilder
     private var taskActions: some View {
-        Button("Edit title…", systemImage: "pencil") {
+        TaskActionsMenu(store: store, task: task, editLabel: "Edit title…") {
             uiState.beginEditing(task)
-        }
-
-        Button("Copy", systemImage: "doc.on.doc") {
-            copyTitle()
-        }
-
-        Menu("Priority") {
-            ForEach(TaskPriority.allCases.reversed()) { priority in
-                Button {
-                    store.setPriority(priority, for: task)
-                } label: {
-                    if task.priority == priority {
-                        Label(priority.title, systemImage: "checkmark")
-                    } else {
-                        Text(priority.title)
-                    }
-                }
-            }
-        }
-
-        Menu("Move to") {
-            ForEach(TaskStatus.moveMenuOrder) { status in
-                Button {
-                    store.setStatus(status, for: task)
-                } label: {
-                    if task.status == status {
-                        Label(status.title, systemImage: "checkmark")
-                    } else {
-                        Text(status.title)
-                    }
-                }
-            }
-        }
-
-        Divider()
-
-        Button("Delete", systemImage: "trash", role: .destructive) {
-            store.delete(task)
         }
     }
 
@@ -201,12 +158,6 @@ struct TaskRowView: View {
     private func handleDoubleClick() {
         guard !isEditing else { return }
         store.performDoubleClickAction(task)
-    }
-
-    private func copyTitle() {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(task.title, forType: .string)
     }
 
     private var progressToggleHelp: String {

@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2EFDB9B856092FACEF1CB4F10C26598A"
+               BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
                BuildableName = "PeekabooMobile.app"
                BlueprintName = "PeekabooMobile"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -30,12 +30,34 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2EFDB9B856092FACEF1CB4F10C26598A"
+            BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
             BuildableName = "PeekabooMobile.app"
             BlueprintName = "PeekabooMobile"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
+      <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F2187DC1DD54C7D394D3652E2A0C722F"
+               BuildableName = "PeekabooMobileTests.xctest"
+               BlueprintName = "PeekabooMobileTests"
+               ReferencedContainer = "container:Peekaboo.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3FA7943D1F00849FAFD045A124792666"
+               BuildableName = "PeekabooMobileUITests.xctest"
+               BlueprintName = "PeekabooMobileUITests"
+               ReferencedContainer = "container:Peekaboo.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "PEEKABOO_TESTING"
@@ -43,21 +65,9 @@
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
-      <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2C9DEA2FD2802A993A717EBB61EE0E70"
-               BuildableName = "PeekabooMobileTests.xctest"
-               BlueprintName = "PeekabooMobileTests"
-               ReferencedContainer = "container:Peekaboo.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-      </Testables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "Local"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -65,13 +75,12 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES"
-      queueDebuggingEnabled = "No">
+      allowLocationSimulation = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2EFDB9B856092FACEF1CB4F10C26598A"
+            BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
             BuildableName = "PeekabooMobile.app"
             BlueprintName = "PeekabooMobile"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -88,7 +97,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2EFDB9B856092FACEF1CB4F10C26598A"
+            BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
             BuildableName = "PeekabooMobile.app"
             BlueprintName = "PeekabooMobile"
             ReferencedContainer = "container:Peekaboo.xcodeproj">

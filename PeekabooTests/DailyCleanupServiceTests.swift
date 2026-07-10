@@ -1,4 +1,5 @@
 import XCTest
+import SwiftData
 @testable import Peekaboo
 
 final class DailyCleanupServiceTests: XCTestCase {
@@ -49,5 +50,47 @@ final class DailyCleanupServiceTests: XCTestCase {
         let service = DailyCleanupService(store: store, now: { clock.value }, calendar: { calendar })
         XCTAssertEqual(service.performCleanup(), 1)
         XCTAssertTrue(store.tasks.isEmpty)
+    }
+
+    @MainActor
+    func testCleanupPreservesDivergentDuplicateButDeletesOldDoneAfterRecentEdit() throws {
+        let now = Date(timeIntervalSince1970: 500_000)
+        let old = now.addingTimeInterval(-3 * 24 * 60 * 60)
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let sharedID = UUID()
+        context.insert(TaskItem(
+            id: sharedID,
+            title: "Done copy",
+            status: .done,
+            createdAt: old,
+            updatedAt: old,
+            completedAt: old
+        ))
+        context.insert(TaskItem(
+            id: sharedID,
+            title: "Restored copy",
+            status: .todo,
+            createdAt: old,
+            updatedAt: now
+        ))
+        let recentDone = TaskItem(
+            title: "Recently edited",
+            status: .done,
+            createdAt: old,
+            updatedAt: now,
+            completedAt: old
+        )
+        context.insert(recentDone)
+        try context.save()
+
+        let store = TaskStore(container: container)
+        let service = DailyCleanupService(store: store, now: { now })
+
+        XCTAssertEqual(service.performCleanup(), 1)
+        let verificationContext = ModelContext(container)
+        let remaining = try verificationContext.fetch(FetchDescriptor<TaskItem>())
+        XCTAssertEqual(remaining.count, 2)
+        XCTAssertTrue(remaining.allSatisfy { $0.id == sharedID })
     }
 }

@@ -7,7 +7,9 @@ final class PanelUIState: ObservableObject {
     @Published var editingTaskID: UUID?
     @Published var isMenuTracking = false
     @Published private(set) var selectedScope: TaskScope = .tasks
-    private(set) var draggedTaskID: UUID?
+    @Published private(set) var draggedTaskID: UUID?
+
+    var isDraggingTask: Bool { draggedTaskID != nil }
 
     var isInteractionLocked: Bool {
         isComposerPresented || editingTaskID != nil || isMenuTracking

@@ -33,6 +33,18 @@ final class AppCoordinator {
             || environment["XCTestBundlePath"] != nil
 
         let settings = AppSettings()
+        #if DEBUG
+        if !isUITesting && !isRunningTests {
+            do {
+                try PersistenceController.initializeCloudKitDevelopmentSchemaIfNeeded()
+            } catch {
+                let nsError = error as NSError
+                let diagnostic = "\(nsError.domain) (\(nsError.code)): \(nsError.userInfo)"
+                NSLog("CloudKit schema initialization failed: %@", diagnostic)
+                settings.reportCloudSyncStartupFailure(diagnostic)
+            }
+        }
+        #endif
         let container: ModelContainer
         do {
             container = try PersistenceController.makeContainer(
@@ -56,14 +68,18 @@ final class AppCoordinator {
         let store = TaskStore(container: container)
         let uiState = PanelUIState()
         let loginItemService = LoginItemService()
+        let agentAccessToken = AgentAccessTokenStore().loadOrCreate()
         let agentServer = AgentServer(
             port: settings.agentServerPort,
+            bearerToken: agentAccessToken,
             handler: MCPRequestHandler(tools: AgentTaskTools(store: store))
         )
         let settingsWindowController = SettingsWindowController(
             settings: settings,
             loginItemService: loginItemService,
-            agentServer: agentServer
+            agentServer: agentServer,
+            store: store,
+            agentAccessToken: agentAccessToken
         )
         let panelController = PeekPanelController(store: store, settings: settings, uiState: uiState)
 

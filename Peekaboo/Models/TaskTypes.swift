@@ -86,6 +86,34 @@ enum TaskScope: String, CaseIterable, Identifiable {
         case .backlog: .backlog
         }
     }
+
+    var newItemTitle: String {
+        switch self {
+        case .tasks: "New Task"
+        case .backlog: "New Backlog Idea"
+        }
+    }
+
+    var composerPlaceholder: String {
+        switch self {
+        case .tasks: "What needs doing?"
+        case .backlog: "Capture an idea…"
+        }
+    }
+
+    var emptyStateTitle: String {
+        switch self {
+        case .tasks: "Nothing hiding here"
+        case .backlog: "No ideas waiting"
+        }
+    }
+
+    func activeSubtitle(count: Int) -> String {
+        switch self {
+        case .tasks: count == 1 ? "1 Active Task" : "\(count) Active Tasks"
+        case .backlog: count == 1 ? "1 Idea" : "\(count) Ideas"
+        }
+    }
 }
 
 enum TaskPriority: String, Codable, CaseIterable, Identifiable {

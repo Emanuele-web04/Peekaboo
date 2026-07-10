@@ -5,11 +5,19 @@ import SwiftUI
 final class SettingsWindowController: NSWindowController {
     private var hasPositionedWindow = false
 
-    init(settings: AppSettings, loginItemService: LoginItemService, agentServer: AgentServer) {
+    init(
+        settings: AppSettings,
+        loginItemService: LoginItemService,
+        agentServer: AgentServer,
+        store: TaskStore,
+        agentAccessToken: String
+    ) {
         let rootView = SettingsView(
             settings: settings,
             loginItemService: loginItemService,
-            agentServer: agentServer
+            agentServer: agentServer,
+            store: store,
+            agentAccessToken: agentAccessToken
         )
         let hostingController = NSHostingController(rootView: rootView)
         let window = NSWindow(contentViewController: hostingController)
@@ -33,6 +41,11 @@ final class SettingsWindowController: NSWindowController {
         guard let window else { return }
 
         if !hasPositionedWindow {
+            // Fit short displays: the SwiftUI content scrolls when this caps it.
+            if let screenHeight = (window.screen ?? NSScreen.main)?.visibleFrame.height {
+                let height = min(800, screenHeight - 40)
+                window.setContentSize(NSSize(width: 520, height: height))
+            }
             window.center()
             hasPositionedWindow = true
         }

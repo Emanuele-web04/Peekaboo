@@ -55,6 +55,26 @@ The Mac app makes a one-time `default.store.pre-cloudkit*` backup before first a
 
 CloudKit pushes are unreliable in Simulator, so the app also refreshes whenever it becomes active and supports pull-to-refresh on iPhone. Final sync validation still requires two real, unlocked devices on the same iCloud account. A directly distributed Mac build needs a Developer ID provisioning profile that contains the iCloud entitlement; ad-hoc signing cannot access the CloudKit container.
 
+### Mac App Store sandbox note
+
+The Release target retains narrowly scoped temporary sandbox exceptions for
+`com.apple.cloudd` and `com.apple.duetactivityscheduler`. They are required for
+`NSPersistentCloudKitContainer` imports and scheduled exports in the sandboxed
+Mac build.
+
+Before App Store submission, add the following under **App Sandbox Entitlement
+Usage Information** in App Store Connect:
+
+- Entitlement: `com.apple.security.temporary-exception.mach-lookup.global-name`
+- Values: `com.apple.cloudd`, `com.apple.duetactivityscheduler`
+- Usage: “Allows Peekaboo's sandboxed macOS app to access the system CloudKit
+  daemon and background activity scheduler used by
+  `NSPersistentCloudKitContainer`, so private task changes can be imported from
+  and exported to the user's iCloud account. Reviewers can assess it by editing
+  a task on the iPhone companion and confirming that the change appears in the
+  Mac app, then editing it on Mac and confirming the reverse sync.”
+- Include the Feedback Assistant ID associated with the macOS sandbox issue.
+
 ## Interactions
 
 - Double-click a To do task to move it to In Progress.
@@ -68,14 +88,16 @@ CloudKit pushes are unreliable in Simulator, so the app also refreshes whenever 
 
 ## Agent access (MCP)
 
-When Agent access is explicitly enabled, Peekaboo serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. The feature is disabled by default. While enabled, any local process — including Claude Code, Synara, Codex or Cursor — can list, create, update, complete and delete tasks, and every change appears live in the panel. Toggle it under Settings → Agent access; change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
+When Agent access is explicitly enabled, Peekaboo serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. The feature is disabled by default and every request must include the random bearer token shown under Settings → Agent access. Authorized clients such as Claude Code, Synara, Codex or Cursor can list, create, update, complete and delete tasks, and every change appears live in the panel. Change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
 
 Tools: `list_tasks`, `create_task`, `update_task` (set `status` to `done` to complete), `delete_task`. Statuses are `todo`, `inProgress`, `done`, `backlog`; priorities are `none`, `low`, `medium`, `high`.
 
 Claude Code / Synara (available in every project via `--scope user`):
 
 ```sh
-claude mcp add --transport http --scope user peekaboo http://127.0.0.1:7335/mcp
+claude mcp add --transport http --scope user \
+  --header "Authorization: Bearer <TOKEN FROM SETTINGS>" \
+  peekaboo http://127.0.0.1:7335/mcp
 ```
 
 or in a project's `.mcp.json`:
@@ -85,7 +107,10 @@ or in a project's `.mcp.json`:
   "mcpServers": {
     "peekaboo": {
       "type": "http",
-      "url": "http://127.0.0.1:7335/mcp"
+      "url": "http://127.0.0.1:7335/mcp",
+      "headers": {
+        "Authorization": "Bearer <TOKEN FROM SETTINGS>"
+      }
     }
   }
 }
@@ -96,15 +121,12 @@ Codex, in `~/.codex/config.toml`:
 ```toml
 [mcp_servers.peekaboo]
 url = "http://127.0.0.1:7335/mcp"
+bearer_token_env_var = "PEEKABOO_MCP_TOKEN"
 ```
 
-If your Codex version predates Streamable HTTP support, bridge it over stdio instead:
+Set `PEEKABOO_MCP_TOKEN` to the token shown in Peekaboo before starting Codex.
 
-```toml
-[mcp_servers.peekaboo]
-command = "npx"
-args = ["-y", "mcp-remote", "http://127.0.0.1:7335/mcp"]
-```
+Older Codex builds without authenticated Streamable HTTP support must be updated before connecting to Peekaboo.
 
 ## Tests
 

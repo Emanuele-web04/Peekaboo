@@ -16,9 +16,13 @@ struct MobileAppRoot: View {
                 startupFailure
             }
         }
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .active, appModel.store != nil else { return }
-            Task { await appModel.refresh() }
+        .fontDesign(.rounded)
+        .task(id: scenePhase) {
+            guard scenePhase == .active, appModel.store != nil else { return }
+            // Re-read the local store once when returning to the foreground.
+            // CloudKit delivery itself remains push-driven; polling this fetch
+            // cannot force an import and only adds misleading churn.
+            await appModel.refresh()
         }
     }
 

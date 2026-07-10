@@ -12,6 +12,7 @@ final class CornerHoverMonitor {
     private var pollingTimer: DispatchSourceTimer?
     private var screenChangeToken: NSObjectProtocol?
     private var responsivenessActivity: NSObjectProtocol?
+    private var revealRefreshTask: Task<Void, Never>?
 
     init(
         settings: AppSettings,
@@ -58,6 +59,8 @@ final class CornerHoverMonitor {
     func stop() {
         pollingTimer?.cancel()
         pollingTimer = nil
+        revealRefreshTask?.cancel()
+        revealRefreshTask = nil
         if let screenChangeToken { NotificationCenter.default.removeObserver(screenChangeToken) }
         screenChangeToken = nil
         if let responsivenessActivity {
@@ -70,6 +73,7 @@ final class CornerHoverMonitor {
 
     func revealProgrammatically(openComposer: Bool = false, scope: TaskScope? = nil) {
         guard let screen = screen(containing: NSEvent.mouseLocation) ?? NSScreen.main else { return }
+        refreshStoreForReveal()
         if let scope { uiState.selectScope(scope) }
         if openComposer {
             var transaction = Transaction()
@@ -120,6 +124,10 @@ final class CornerHoverMonitor {
             break
         case .reveal:
             guard let activeScreen else { return }
+            // Pull any CloudKit import out of SwiftData's context cache before
+            // calculating the panel contents. This only runs on reveal, not on
+            // the 20 Hz pointer sampling path.
+            refreshStoreForReveal()
             panelController.show(on: activeScreen, corner: settings.corner)
         case .hide:
             panelController.hide()
@@ -131,5 +139,15 @@ final class CornerHoverMonitor {
             // Edge-pinned pointer coordinates can land exactly on frame.maxX, outside
             // every screen frame; tolerate a 1 pt overshoot so corners keep working.
             ?? NSScreen.screens.first { $0.frame.insetBy(dx: -1, dy: -1).contains(point) }
+    }
+
+    private func refreshStoreForReveal() {
+        store.refresh()
+        revealRefreshTask?.cancel()
+        revealRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+            self?.store.refresh()
+        }
     }
 }

@@ -43,6 +43,7 @@ struct PeekPanelView: View {
         .animation(reduceMotion ? nil : PeekabooMotion.spring, value: uiState.isComposerPresented)
         .animation(reduceMotion ? nil : PeekabooMotion.spring, value: store.tasks.map(\.id))
         .animation(reduceMotion ? nil : PeekabooMotion.quick, value: uiState.selectedScope)
+        .animation(reduceMotion ? nil : PeekabooMotion.quick, value: uiState.isDraggingTask)
     }
 
     private func header(activeCount: Int) -> some View {
@@ -153,7 +154,7 @@ struct PeekPanelView: View {
     private func taskList(sections: [TaskSectionSnapshot]) -> some View {
         ScrollView {
             LazyVStack(spacing: 7) {
-                ForEach(sections) { section in
+                ForEach(displaySections(from: sections)) { section in
                     TaskSectionView(
                         store: store,
                         uiState: uiState,
@@ -168,9 +169,19 @@ struct PeekPanelView: View {
         .scrollIndicators(.never)
     }
 
+    /// While a task is being dragged, surface every section of the scope —
+    /// including empty ones — so any status is reachable as a drop target.
+    private func displaySections(from sections: [TaskSectionSnapshot]) -> [TaskSectionSnapshot] {
+        guard uiState.isDraggingTask else { return sections }
+        return uiState.selectedScope.statuses.map { status in
+            sections.first { $0.status == status }
+                ?? TaskSectionSnapshot(status: status, tasks: [])
+        }
+    }
+
     private var emptyState: some View {
         VStack(spacing: 5) {
-            Text(uiState.selectedScope == .tasks ? "Nothing hiding here" : "No ideas waiting")
+            Text(uiState.selectedScope.emptyStateTitle)
                 .font(.system(size: 13, weight: .medium, design: .rounded))
             Text(uiState.selectedScope == .tasks
                 ? "Add a task and it will stay close by."
@@ -183,16 +194,10 @@ struct PeekPanelView: View {
     }
 
     private func activeSubtitle(count: Int) -> String {
-        switch uiState.selectedScope {
-        case .tasks:
-            return count == 1 ? "1 Active Task" : "\(count) Active Tasks"
-        case .backlog:
-            return count == 1 ? "1 Idea" : "\(count) Ideas"
-        }
+        uiState.selectedScope.activeSubtitle(count: count)
     }
 
     private var newItemTitle: String {
-        uiState.selectedScope == .tasks ? "New Task" : "New Backlog Idea"
+        uiState.selectedScope.newItemTitle
     }
-
 }

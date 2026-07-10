@@ -5,8 +5,25 @@ struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var loginItemService: LoginItemService
     @ObservedObject var agentServer: AgentServer
+    @ObservedObject var store: TaskStore
+    let agentAccessToken: String
 
     var body: some View {
+        // Scrolls when the window is shorter than the content (small screens,
+        // extra sections like sync errors); the window caps its own height.
+        ScrollView {
+            content
+        }
+        .frame(width: 520)
+        .onAppear {
+            loginItemService.refresh()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            loginItemService.refresh()
+        }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 24) {
             header
 
@@ -110,6 +127,10 @@ struct SettingsView: View {
 
             Divider()
 
+            cloudSyncSection
+
+            Divider()
+
             VStack(alignment: .leading, spacing: 10) {
                 Toggle(isOn: $settings.isAgentAccessEnabled) {
                     Label("Agent access", systemImage: "sparkles")
@@ -127,6 +148,14 @@ struct SettingsView: View {
                         .font(.caption.monospaced())
                         .foregroundStyle(.tertiary)
                         .textSelection(.enabled)
+
+                    Text("Authorization: Bearer \(agentAccessToken)")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                        .help("Required authorization header for local MCP clients")
                 }
             }
 
@@ -148,18 +177,9 @@ struct SettingsView: View {
                 }
             }
 
-            Spacer(minLength: 0)
-
             aboutFooter
         }
         .padding(28)
-        .frame(width: 520, height: 800)
-        .onAppear {
-            loginItemService.refresh()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            loginItemService.refresh()
-        }
     }
 
     private var header: some View {
@@ -187,6 +207,34 @@ struct SettingsView: View {
             get: { loginItemService.isEnabled },
             set: { loginItemService.setEnabled($0) }
         )
+    }
+
+    private var cloudSyncSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(store.cloudSyncStatus.title, systemImage: store.cloudSyncStatus.symbolName)
+                .font(.headline)
+                .foregroundStyle(
+                    store.cloudSyncStatus.lastErrorMessage == nil ? Color.primary : Color.orange
+                )
+
+            if let lastSuccess = store.cloudSyncStatus.lastSuccessfulActivityAt {
+                Text("Last successful iCloud activity \(lastSuccess.formatted(date: .abbreviated, time: .standard)).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Peekaboo is waiting for its first completed iCloud import or export.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let error = store.cloudSyncStatus.lastErrorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .lineLimit(3)
+                    .help(error)
+            }
+        }
     }
 
     @ViewBuilder

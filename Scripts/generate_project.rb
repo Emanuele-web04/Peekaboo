@@ -33,15 +33,18 @@ staged_project_path = File.join(staging_directory, File.basename(project_path))
 project = Xcodeproj::Project.new(staged_project_path, false, 77)
 project.root_object.attributes['LastSwiftUpdateCheck'] = '2660'
 project.root_object.attributes['LastUpgradeCheck'] = '2660'
+project.add_build_configuration('Local', :debug)
 
 app = project.new_target(:application, 'Peekaboo', :osx, '14.0')
 unit_tests = project.new_target(:unit_test_bundle, 'PeekabooTests', :osx, '14.0')
 ui_tests = project.new_target(:ui_test_bundle, 'PeekabooUITests', :osx, '14.0')
 mobile_app = project.new_target(:application, 'PeekabooMobile', :ios, '17.0')
 mobile_tests = project.new_target(:unit_test_bundle, 'PeekabooMobileTests', :ios, '17.0')
+mobile_ui_tests = project.new_target(:ui_test_bundle, 'PeekabooMobileUITests', :ios, '17.0')
 unit_tests.add_dependency(app)
 ui_tests.add_dependency(app)
 mobile_tests.add_dependency(mobile_app)
+mobile_ui_tests.add_dependency(mobile_app)
 
 def add_swift_sources(project, target, group_name, directory)
   group = project.main_group.new_group(group_name, group_name)
@@ -63,8 +66,16 @@ mobile_tests_group = add_swift_sources(
   'PeekabooMobileTests',
   'PeekabooMobileTests'
 )
+mobile_ui_tests_group = add_swift_sources(
+  project,
+  mobile_ui_tests,
+  'PeekabooMobileUITests',
+  'PeekabooMobileUITests'
+)
 
 shared_mobile_sources = [
+  'Design/PeekabooTheme.swift',
+  'Design/TaskActionsMenu.swift',
   'Models/TaskItem.swift',
   'Models/TaskTypes.swift',
   'Services/PersistenceController.swift',
@@ -81,6 +92,8 @@ assets = app_group.new_file('Resources/Assets.xcassets')
 app.resources_build_phase.add_file_reference(assets)
 mobile_app.resources_build_phase.add_file_reference(assets)
 app_group.new_file('Peekaboo.entitlements')
+app_group.new_file('PeekabooDebug.entitlements')
+app_group.new_file('PeekabooLocal.entitlements')
 app_group.new_file('Info.plist')
 mobile_group.new_file('PeekabooMobile.entitlements')
 mobile_group.new_file('Info.plist')
@@ -96,7 +109,11 @@ app.build_configurations.each do |config|
   settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
   settings['GENERATE_INFOPLIST_FILE'] = 'NO'
   settings['INFOPLIST_FILE'] = 'Peekaboo/Info.plist'
-  settings['CODE_SIGN_ENTITLEMENTS'] = 'Peekaboo/Peekaboo.entitlements'
+  settings['CODE_SIGN_ENTITLEMENTS'] = case config.name
+                                       when 'Debug' then 'Peekaboo/PeekabooDebug.entitlements'
+                                       when 'Local' then 'Peekaboo/PeekabooLocal.entitlements'
+                                       else 'Peekaboo/Peekaboo.entitlements'
+                                       end
   settings['CODE_SIGN_STYLE'] = 'Automatic'
   settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
   settings['ENABLE_APP_SANDBOX'] = 'YES'
@@ -106,8 +123,13 @@ app.build_configurations.each do |config|
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['SWIFT_EMIT_LOC_STRINGS'] = 'YES'
-  settings['MARKETING_VERSION'] = '1.0'
-  settings['CURRENT_PROJECT_VERSION'] = '1'
+  settings['MARKETING_VERSION'] = '1.1'
+  settings['CURRENT_PROJECT_VERSION'] = '9'
+  settings['ICLOUD_CONTAINER_ENVIRONMENT'] = config.name == 'Release' ? 'Production' : 'Development'
+  settings['APS_ENVIRONMENT'] = config.name == 'Release' ? 'production' : 'development'
+  abort "Mismatched Peekaboo CloudKit/APNs environment for #{config.name}" unless
+    (settings['ICLOUD_CONTAINER_ENVIRONMENT'] == 'Production') ==
+      (settings['APS_ENVIRONMENT'] == 'production')
 end
 
 unit_tests.build_configurations.each do |config|
@@ -116,6 +138,8 @@ unit_tests.build_configurations.each do |config|
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+  settings['CODE_SIGN_STYLE'] = 'Automatic'
+  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
   settings['TEST_HOST'] = '$(BUILT_PRODUCTS_DIR)/Peekaboo.app/Contents/MacOS/Peekaboo'
   settings['BUNDLE_LOADER'] = '$(TEST_HOST)'
 end
@@ -126,6 +150,8 @@ ui_tests.build_configurations.each do |config|
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+  settings['CODE_SIGN_STYLE'] = 'Automatic'
+  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
   settings['TEST_TARGET_NAME'] = 'Peekaboo'
 end
 
@@ -150,7 +176,12 @@ mobile_app.build_configurations.each do |config|
   settings['TARGETED_DEVICE_FAMILY'] = '1'
   settings['SUPPORTS_MACCATALYST'] = 'NO'
   settings['MARKETING_VERSION'] = '1.0'
-  settings['CURRENT_PROJECT_VERSION'] = '1'
+  settings['CURRENT_PROJECT_VERSION'] = '7'
+  settings['ICLOUD_CONTAINER_ENVIRONMENT'] = config.name == 'Release' ? 'Production' : 'Development'
+  settings['APS_ENVIRONMENT'] = config.name == 'Release' ? 'production' : 'development'
+  abort "Mismatched PeekabooMobile CloudKit/APNs environment for #{config.name}" unless
+    (settings['ICLOUD_CONTAINER_ENVIRONMENT'] == 'Production') ==
+      (settings['APS_ENVIRONMENT'] == 'production')
 end
 
 mobile_tests.build_configurations.each do |config|
@@ -159,12 +190,29 @@ mobile_tests.build_configurations.each do |config|
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+  settings['CODE_SIGN_STYLE'] = 'Automatic'
+  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
   settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
   settings['SDKROOT'] = 'iphoneos'
   settings['SUPPORTED_PLATFORMS'] = 'iphoneos iphonesimulator'
   settings['TARGETED_DEVICE_FAMILY'] = '1'
   settings['TEST_HOST'] = '$(BUILT_PRODUCTS_DIR)/PeekabooMobile.app/PeekabooMobile'
   settings['BUNDLE_LOADER'] = '$(TEST_HOST)'
+end
+
+mobile_ui_tests.build_configurations.each do |config|
+  settings = config.build_settings
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.PeekabooMobileUITests'
+  settings['GENERATE_INFOPLIST_FILE'] = 'YES'
+  settings['SWIFT_VERSION'] = '5.0'
+  settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+  settings['CODE_SIGN_STYLE'] = 'Automatic'
+  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+  settings['SDKROOT'] = 'iphoneos'
+  settings['SUPPORTED_PLATFORMS'] = 'iphoneos iphonesimulator'
+  settings['TARGETED_DEVICE_FAMILY'] = '1'
+  settings['TEST_TARGET_NAME'] = 'PeekabooMobile'
 end
 
 # xcodeproj includes the current random project/target UUIDs in proxy paths when
@@ -205,6 +253,7 @@ target_attributes[mobile_app.uuid] = {
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(app)
 scheme.set_launch_target(app)
+scheme.launch_action.build_configuration = 'Local'
 scheme.add_test_target(unit_tests)
 scheme.add_test_target(ui_tests)
 scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([
@@ -215,7 +264,9 @@ scheme.save_as(staged_project_path, 'Peekaboo', true)
 mobile_scheme = Xcodeproj::XCScheme.new
 mobile_scheme.add_build_target(mobile_app)
 mobile_scheme.set_launch_target(mobile_app)
+mobile_scheme.launch_action.build_configuration = 'Local'
 mobile_scheme.add_test_target(mobile_tests)
+mobile_scheme.add_test_target(mobile_ui_tests)
 mobile_scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([
   { key: 'PEEKABOO_TESTING', value: '1', enabled: true }
 ])

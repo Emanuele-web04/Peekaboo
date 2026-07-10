@@ -72,6 +72,11 @@ final class MobileAppModel: ObservableObject {
                 || environment["XCTestConfigurationFilePath"] != nil
                 || environment["XCTestBundlePath"] != nil
             shouldCheckICloudStatus = !isRunningTests
+            #if DEBUG
+            if !isRunningTests {
+                try PersistenceController.initializeCloudKitDevelopmentSchemaIfNeeded()
+            }
+            #endif
             let container = try PersistenceController.makeContainer(
                 inMemory: isRunningTests
             )

@@ -19,10 +19,20 @@ final class TaskStoreTests: XCTestCase {
     }
 
     func testTaskDragPayloadExportsInternalDataAndPlainText() {
-        let payload = TaskDragPayload(title: "Paste me")
+        let taskID = UUID()
+        let payload = TaskDragPayload(taskID: taskID, title: "Paste me")
         let provider = payload.itemProvider()
 
         XCTAssertTrue(provider.hasItemConformingToTypeIdentifier(UTType.text.identifier))
+        XCTAssertTrue(provider.hasItemConformingToTypeIdentifier(
+            TaskDragPayload.internalTaskType.identifier
+        ))
+
+        let internalIDLoaded = expectation(description: "Internal task identity loads")
+        XCTAssertTrue(TaskDragPayload.loadTaskID(from: [provider]) { loadedID in
+            XCTAssertEqual(loadedID, taskID)
+            internalIDLoaded.fulfill()
+        })
 
         let plainTextLoaded = expectation(description: "Plain-text drag representation loads")
         provider.loadDataRepresentation(forTypeIdentifier: UTType.utf8PlainText.identifier) { data, error in
@@ -30,7 +40,7 @@ final class TaskStoreTests: XCTestCase {
             XCTAssertEqual(data, Data("Paste me".utf8))
             plainTextLoaded.fulfill()
         }
-        wait(for: [plainTextLoaded], timeout: 1)
+        wait(for: [internalIDLoaded, plainTextLoaded], timeout: 1)
 
     }
 
@@ -82,7 +92,38 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
-    func testRefreshDeduplicatesCloudKitCompatibleApplicationIDs() throws {
+    func testSuccessfulCloudImportRefreshesChangesSavedOutsideStoreContext() async throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let seedContext = ModelContext(container)
+        seedContext.insert(TaskItem(title: "Before iPhone update", priority: .high))
+        try seedContext.save()
+
+        let store = TaskStore(container: container)
+        XCTAssertEqual(store.tasks.map(\.title), ["Before iPhone update"])
+
+        let externalContext = ModelContext(container)
+        let importedTask = try XCTUnwrap(
+            externalContext.fetch(FetchDescriptor<TaskItem>()).first
+        )
+        importedTask.title = "Updated from iPhone"
+        importedTask.updatedAt = Date()
+        try externalContext.save()
+        XCTAssertEqual(store.tasks.map(\.title), ["Before iPhone update"])
+
+        store.handleCloudSyncEvent(CloudSyncEventUpdate(
+            id: UUID(),
+            kind: .importData,
+            endedAt: Date(),
+            succeeded: true,
+            errorMessage: nil
+        ))
+        try await Task.sleep(for: .milliseconds(250))
+
+        XCTAssertEqual(store.tasks.map(\.title), ["Updated from iPhone"])
+    }
+
+    @MainActor
+    func testRefreshHidesDuplicateApplicationIDsWithoutDeletingEitherRow() throws {
         let container = try PersistenceController.makeContainer(inMemory: true)
         let context = ModelContext(container)
         let sharedID = UUID()
@@ -104,7 +145,7 @@ final class TaskStoreTests: XCTestCase {
 
         XCTAssertEqual(store.tasks.count, 1)
         XCTAssertEqual(store.tasks.first?.title, "Newer")
-        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 1)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
     }
 
     @MainActor
@@ -123,6 +164,57 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
         store.refresh()
         XCTAssertEqual(store.tasks.map(\.title), ["Beta"])
+    }
+
+    @MainActor
+    func testMutationsAndDeleteApplyToEveryPhysicalDuplicate() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let seedContext = ModelContext(container)
+        let sharedID = UUID()
+        seedContext.insert(TaskItem(id: sharedID, title: "Older", priority: .low))
+        seedContext.insert(TaskItem(
+            id: sharedID,
+            title: "Visible",
+            priority: .medium,
+            updatedAt: Date().addingTimeInterval(1)
+        ))
+        try seedContext.save()
+        let store = TaskStore(container: container)
+        let visible = try XCTUnwrap(store.tasks.first)
+
+        XCTAssertTrue(store.update(visible, title: "Unified", priority: .high, status: .done))
+        var verificationContext = ModelContext(container)
+        var replicas = try verificationContext.fetch(FetchDescriptor<TaskItem>())
+        XCTAssertEqual(replicas.count, 2)
+        XCTAssertTrue(replicas.allSatisfy {
+            $0.title == "Unified"
+                && $0.priority == .high
+                && $0.status == .done
+                && $0.completedAt != nil
+        })
+
+        XCTAssertTrue(store.delete(try XCTUnwrap(store.tasks.first)))
+        verificationContext = ModelContext(container)
+        replicas = try verificationContext.fetch(FetchDescriptor<TaskItem>())
+        XCTAssertTrue(replicas.isEmpty)
+    }
+
+    @MainActor
+    func testExactDuplicateSelectionStaysStableAcrossRefreshes() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let seedContext = ModelContext(container)
+        let sharedID = UUID()
+        let timestamp = Date(timeIntervalSince1970: 2_000)
+        seedContext.insert(TaskItem(id: sharedID, title: "Same", updatedAt: timestamp))
+        seedContext.insert(TaskItem(id: sharedID, title: "Same", updatedAt: timestamp))
+        try seedContext.save()
+        let store = TaskStore(container: container)
+        let selectedID = try XCTUnwrap(store.tasks.first?.persistentModelID)
+
+        for _ in 0..<5 {
+            store.refresh()
+            XCTAssertEqual(store.tasks.first?.persistentModelID, selectedID)
+        }
     }
 
     @MainActor
@@ -145,7 +237,7 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
-    func testFailedDeduplicationRollsBackAndCanRetry() throws {
+    func testRefreshNeverPersistsDuplicateCleanup() throws {
         let container = try PersistenceController.makeContainer(inMemory: true)
         let context = ModelContext(container)
         let sharedID = UUID()
@@ -157,26 +249,26 @@ final class TaskStoreTests: XCTestCase {
         gate.shouldFail = true
         let store = TaskStore(container: container, persist: gate.save)
 
-        XCTAssertTrue(store.tasks.isEmpty)
-        XCTAssertNotNil(store.lastErrorMessage)
-        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
-
-        gate.shouldFail = false
-        store.refresh()
-
-        XCTAssertEqual(store.tasks.count, 1)
+        XCTAssertEqual(store.tasks.map(\.title), ["Newer"])
         XCTAssertNil(store.lastErrorMessage)
-        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 1)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
     }
 
-    func testCloudConfigurationPreservesLegacyStoreLocation() {
+    func testCloudConfigurationsUseSeparateEnvironmentStores() {
         let legacy = ModelConfiguration(isStoredInMemoryOnly: false)
-        let cloud = PersistenceController.makeConfiguration()
+        let production = PersistenceController.makeConfiguration(environment: .production)
+        let development = PersistenceController.makeConfiguration(environment: .development)
         let inMemory = PersistenceController.makeConfiguration(inMemory: true)
 
-        XCTAssertEqual(cloud.url, legacy.url)
+        XCTAssertEqual(production.url, legacy.url)
+        XCTAssertNotEqual(development.url, production.url)
+        XCTAssertEqual(development.url.lastPathComponent, "development.store")
         XCTAssertEqual(
-            cloud.cloudKitContainerIdentifier,
+            production.cloudKitContainerIdentifier,
+            PersistenceController.cloudKitContainerIdentifier
+        )
+        XCTAssertEqual(
+            development.cloudKitContainerIdentifier,
             PersistenceController.cloudKitContainerIdentifier
         )
         XCTAssertNil(inMemory.cloudKitContainerIdentifier)
@@ -377,6 +469,29 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testSnapshotMemoizationStaysCoherentAcrossMutations() throws {
+        let store = try makeTestStore()
+        let task = try XCTUnwrap(store.create(title: "Cached"))
+
+        XCTAssertEqual(store.snapshot(for: .tasks).visibleCount, 1)
+        // Second call between edits must serve the same content (cache hit).
+        XCTAssertEqual(store.snapshot(for: .tasks).sections.map(\.status), [.todo])
+
+        store.setStatus(.inProgress, for: task)
+        XCTAssertEqual(store.snapshot(for: .tasks).sections.map(\.status), [.inProgress])
+
+        store.setStatus(.backlog, for: task)
+        XCTAssertEqual(store.snapshot(for: .tasks).visibleCount, 0)
+        XCTAssertEqual(store.snapshot(for: .backlog).visibleCount, 1)
+
+        store.delete(task)
+        XCTAssertEqual(store.snapshot(for: .backlog).visibleCount, 0)
+
+        store.refresh()
+        XCTAssertEqual(store.snapshot(for: .backlog).visibleCount, 0)
+    }
+
+    @MainActor
     func testExternalDragStartsPendingTasksWithoutReopeningDoneTasks() throws {
         let store = try makeTestStore()
         let todo = try XCTUnwrap(store.create(title: "Todo"))
@@ -412,6 +527,16 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertTrue(store.reorder(taskID: third.id, relativeTo: first.id))
         XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id, first.id, third.id])
 
+        let firstOrder = first.manualOrder
+        let secondOrder = second.manualOrder
+        XCTAssertTrue(store.reorder(taskID: third.id, relativeTo: second.id))
+        XCTAssertEqual(first.manualOrder, firstOrder)
+        XCTAssertEqual(second.manualOrder, secondOrder)
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [third.id, second.id, first.id])
+
+        XCTAssertTrue(store.reorder(taskID: third.id, relativeTo: first.id))
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id, first.id, third.id])
+
         clock.value = Date(timeIntervalSince1970: 1_300)
         store.rename(third, to: "Third renamed")
         XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id, first.id, third.id])
@@ -422,6 +547,58 @@ final class TaskStoreTests: XCTestCase {
 
         store.refresh()
         XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [newest.id, second.id, first.id, third.id])
+    }
+
+    @MainActor
+    func testDropOntoRowReordersWithinSectionAndRestatusesAcrossSections() throws {
+        let clock = MutableNow(Date(timeIntervalSince1970: 1_000))
+        let store = try makeTestStore(now: { clock.value })
+        let first = try XCTUnwrap(store.create(title: "First"))
+        clock.value = Date(timeIntervalSince1970: 1_100)
+        let second = try XCTUnwrap(store.create(title: "Second"))
+        clock.value = Date(timeIntervalSince1970: 1_200)
+        let finished = try XCTUnwrap(store.create(title: "Finished", status: .done))
+
+        // Same section behaves like a plain reorder.
+        XCTAssertTrue(store.drop(taskID: second.id, onto: first.id))
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [first.id, second.id])
+
+        // Another section's row: the task adopts that section's status and
+        // lands next to the target row.
+        clock.value = Date(timeIntervalSince1970: 1_300)
+        XCTAssertTrue(store.drop(taskID: first.id, onto: finished.id))
+        XCTAssertEqual(first.status, .done)
+        XCTAssertNotNil(first.completedAt)
+        XCTAssertEqual(store.orderedTasks(for: .done).map(\.id), [finished.id, first.id])
+        XCTAssertEqual(store.orderedTasks(for: .todo).map(\.id), [second.id])
+
+        // A cross-section drop keeps the dragged task's own priority.
+        clock.value = Date(timeIntervalSince1970: 1_400)
+        let urgent = try XCTUnwrap(store.create(title: "Urgent", priority: .high))
+        XCTAssertTrue(store.drop(taskID: urgent.id, onto: finished.id))
+        XCTAssertEqual(urgent.status, .done)
+        XCTAssertEqual(urgent.priority, .high)
+
+        XCTAssertFalse(store.drop(taskID: second.id, onto: second.id))
+        XCTAssertFalse(store.drop(taskID: UUID(), onto: second.id))
+        XCTAssertFalse(store.drop(taskID: second.id, onto: UUID()))
+    }
+
+    @MainActor
+    func testDropIntoSectionChangesStatusOnlyAcrossSections() throws {
+        let store = try makeTestStore()
+        let task = try XCTUnwrap(store.create(title: "Task"))
+
+        XCTAssertTrue(store.drop(taskID: task.id, into: .inProgress))
+        XCTAssertEqual(task.status, .inProgress)
+
+        XCTAssertTrue(store.drop(taskID: task.id, into: .done))
+        XCTAssertEqual(task.status, .done)
+        XCTAssertNotNil(task.completedAt)
+
+        // Dropping back into the section it already lives in is a no-op.
+        XCTAssertFalse(store.drop(taskID: task.id, into: .done))
+        XCTAssertFalse(store.drop(taskID: UUID(), into: .todo))
     }
 
     @MainActor
@@ -436,5 +613,63 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertFalse(store.reorder(taskID: medium.id, relativeTo: high.id))
         XCTAssertFalse(store.reorder(taskID: medium.id, relativeTo: anotherMedium.id))
         XCTAssertFalse(store.reorder(taskID: UUID(), relativeTo: medium.id))
+    }
+
+    func testCloudSyncStatusTracksActivitySuccessAndFailure() {
+        let importID = UUID()
+        let exportID = UUID()
+        let importEnd = Date(timeIntervalSince1970: 1_000)
+        let exportEnd = Date(timeIntervalSince1970: 2_000)
+        var status = CloudSyncStatus()
+
+        status.apply(CloudSyncEventUpdate(
+            id: importID,
+            kind: .importData,
+            endedAt: nil,
+            succeeded: false,
+            errorMessage: nil
+        ))
+        XCTAssertTrue(status.isSyncing)
+        XCTAssertEqual(status.title, "Syncing…")
+
+        status.apply(CloudSyncEventUpdate(
+            id: importID,
+            kind: .importData,
+            endedAt: importEnd,
+            succeeded: true,
+            errorMessage: nil
+        ))
+        XCTAssertFalse(status.isSyncing)
+        XCTAssertEqual(status.lastSuccessfulImportAt, importEnd)
+        XCTAssertEqual(status.title, "Synced")
+
+        status.apply(CloudSyncEventUpdate(
+            id: exportID,
+            kind: .exportData,
+            endedAt: exportEnd,
+            succeeded: false,
+            errorMessage: "Quota exceeded"
+        ))
+        XCTAssertEqual(status.lastErrorMessage, "Quota exceeded")
+        XCTAssertEqual(status.title, "Sync issue")
+
+        status.apply(CloudSyncEventUpdate(
+            id: UUID(),
+            kind: .importData,
+            endedAt: exportEnd.addingTimeInterval(1),
+            succeeded: true,
+            errorMessage: nil
+        ))
+        XCTAssertEqual(status.lastErrorMessage, "Quota exceeded")
+
+        status.apply(CloudSyncEventUpdate(
+            id: exportID,
+            kind: .exportData,
+            endedAt: exportEnd.addingTimeInterval(2),
+            succeeded: true,
+            errorMessage: nil
+        ))
+        XCTAssertNil(status.lastErrorMessage)
+        XCTAssertEqual(status.title, "Synced")
     }
 }

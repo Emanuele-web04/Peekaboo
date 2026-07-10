@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CF24A0488E7644288EC04030CC8D0287"
+               BlueprintIdentifier = "94BCA018D4F4DBA01E527427FF1757FC"
                BuildableName = "Peekaboo.app"
                BlueprintName = "Peekaboo"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -30,7 +30,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CF24A0488E7644288EC04030CC8D0287"
+            BlueprintIdentifier = "94BCA018D4F4DBA01E527427FF1757FC"
             BuildableName = "Peekaboo.app"
             BlueprintName = "Peekaboo"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -41,7 +41,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "91BDB09E2CCE55053A520FC3E5888B62"
+               BlueprintIdentifier = "D1BFAC2CEF200972ACAD86739F06C776"
                BuildableName = "PeekabooTests.xctest"
                BlueprintName = "PeekabooTests"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -51,7 +51,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C189D2E5002F47643543DE3429A6C0D0"
+               BlueprintIdentifier = "EA24A28AA74D25924083CF7AE04E7535"
                BuildableName = "PeekabooUITests.xctest"
                BlueprintName = "PeekabooUITests"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -67,7 +67,7 @@
       </EnvironmentVariables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "Local"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -80,7 +80,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CF24A0488E7644288EC04030CC8D0287"
+            BlueprintIdentifier = "94BCA018D4F4DBA01E527427FF1757FC"
             BuildableName = "Peekaboo.app"
             BlueprintName = "Peekaboo"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -97,7 +97,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CF24A0488E7644288EC04030CC8D0287"
+            BlueprintIdentifier = "94BCA018D4F4DBA01E527427FF1757FC"
             BuildableName = "Peekaboo.app"
             BlueprintName = "Peekaboo"
             ReferencedContainer = "container:Peekaboo.xcodeproj">

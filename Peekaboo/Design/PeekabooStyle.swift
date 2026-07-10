@@ -7,23 +7,6 @@ enum PeekabooStyle {
     static let taskSpacing: CGFloat = 4
 }
 
-enum PeekabooMotion {
-    static let spring = Animation.spring(response: 0.30, dampingFraction: 0.84)
-    static let quick = Animation.easeOut(duration: 0.14)
-    static let background = Animation.easeInOut(duration: 0.22)
-}
-
-extension TaskPriority {
-    var color: Color {
-        switch self {
-        case .none: Color.secondary.opacity(0.5)
-        case .low: .blue
-        case .medium: .orange
-        case .high: .red
-        }
-    }
-}
-
 struct PeekPanelSurface: ViewModifier {
     let translucent: Bool
 
