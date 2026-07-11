@@ -53,6 +53,13 @@ restored the entitlement. Never repeat this change.
 ### Persistence and observation invariants
 
 - Keep `NSApplication.shared.registerForRemoteNotifications()` on macOS.
+- Keep `UIApplication.registerForRemoteNotifications()` on iPhone so silent
+  CloudKit pushes can wake a suspended app and schedule an import.
+- Keep the bounded `ProcessInfo` activity assertion around macOS local
+  save-to-export and import-to-refresh windows. Peekaboo is an `LSUIElement`
+  app and can otherwise enter App Nap while Core Data is still mirroring. The
+  assertion must remain event-driven, allow idle system sleep, and retain its
+  timeout; never replace it with permanent activity or polling.
 - Keep both `NSPersistentStoreRemoteChange` and
   `NSPersistentCloudKitContainer.eventChangedNotification` observation.
 - On a completed CloudKit import, replace the long-lived `ModelContext` with a
@@ -87,6 +94,11 @@ Treat these as real failures until disproved:
 - Phone-to-phone sync works but Mac does not: inspect the installed Mac build,
   Production entitlements, active store path, CloudKit event timestamps, and
   fresh-context import refresh.
+- Mac exports succeed but a backgrounded iPhone does not import: verify the
+  installed iPhone build has production APNs, the `remote-notification`
+  background mode, explicit APNs registration, and a new import event after the
+  server change. A force-quit or locked/unavailable test device cannot prove
+  live delivery; foreground it once before diagnosing the data layer.
 - A task appears in `default.store` but no later export event appears in
   `ANSCKEVENT`: the Mac mirroring/export scheduler is broken. UI refresh code
   cannot fix it.

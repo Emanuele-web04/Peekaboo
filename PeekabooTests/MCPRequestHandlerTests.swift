@@ -16,6 +16,20 @@ final class MCPRequestHandlerTests: XCTestCase {
         handler = nil
     }
 
+    func testAgentSetupPromptIncludesConnectionAndSafeClientInstructions() {
+        let prompt = AgentSetupPrompt.make(
+            endpoint: "http://127.0.0.1:7335/mcp",
+            bearerToken: "secret-token"
+        )
+
+        XCTAssertTrue(prompt.contains("URL: http://127.0.0.1:7335/mcp"))
+        XCTAssertTrue(prompt.contains("Authorization: Bearer secret-token"))
+        XCTAssertTrue(prompt.contains("Codex, Synara, or Claude"))
+        XCTAssertTrue(prompt.contains("bearer_token_env_var = \"PEEKABOO_MCP_TOKEN\""))
+        XCTAssertTrue(prompt.contains("Do not alter or remove any other MCP servers"))
+        XCTAssertTrue(prompt.contains("do not echo it in your reply"))
+    }
+
     func testInitializeAdvertisesToolsAndEchoesSupportedVersion() throws {
         let response = try send(method: "initialize", params: ["protocolVersion": "2025-03-26"])
         let result = try XCTUnwrap(response["result"] as? [String: Any])

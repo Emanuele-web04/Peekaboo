@@ -1,12 +1,36 @@
 import AppKit
 import SwiftUI
 
+enum AgentSetupPrompt {
+    static func make(endpoint: String, bearerToken: String) -> String {
+        """
+        Set up the local Peekaboo MCP server in the AI client you are currently running.
+
+        Connection:
+        - Name: peekaboo
+        - Transport: Streamable HTTP
+        - URL: \(endpoint)
+        - Authorization: Bearer \(bearerToken)
+
+        Complete the setup now using this client's native MCP configuration:
+        - Detect whether you are running in Codex, Synara, or Claude and use its user-level configuration.
+        - In Codex, configure `mcp_servers.peekaboo` with the URL and `bearer_token_env_var = "PEEKABOO_MCP_TOKEN"`, then securely set that environment variable for GUI launches. Tell me if Codex must be restarted or a new task opened.
+        - In Claude or Synara, register a user-scoped HTTP MCP server named `peekaboo` with the Authorization header above.
+        - If `peekaboo` already exists, repair that entry instead of creating a duplicate.
+        - Do not alter or remove any other MCP servers.
+
+        Treat the bearer token as a secret: do not echo it in your reply or expose it in logs. After setup, verify the connection by listing Peekaboo's MCP tools. Report only whether setup succeeded and any restart still required.
+        """
+    }
+}
+
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var loginItemService: LoginItemService
     @ObservedObject var agentServer: AgentServer
     @ObservedObject var store: TaskStore
     let agentAccessToken: String
+    @State private var didCopyAgentSetupPrompt = false
 
     var body: some View {
         // Scrolls when the window is shorter than the content (small screens,
@@ -136,6 +160,7 @@ struct SettingsView: View {
                     Label("Agent access", systemImage: "sparkles")
                         .font(.headline)
                 }
+                .toggleStyle(.switch)
 
                 Text("Allow local AI agents to read, create, update and permanently delete tasks over MCP.")
                     .font(.caption)
@@ -156,6 +181,27 @@ struct SettingsView: View {
                         .truncationMode(.middle)
                         .textSelection(.enabled)
                         .help("Required authorization header for local MCP clients")
+
+                    HStack(spacing: 8) {
+                        Button(action: copyAgentSetupPrompt) {
+                            Label(
+                                didCopyAgentSetupPrompt ? "Copy setup prompt again" : "Copy setup prompt",
+                                systemImage: didCopyAgentSetupPrompt ? "checkmark" : "doc.on.doc"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+
+                        if didCopyAgentSetupPrompt {
+                            Text("Ready to paste")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                    }
+
+                    Text("Paste into Codex, Synara, or Claude. The copied prompt includes your private access token.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
             }
 
@@ -207,6 +253,18 @@ struct SettingsView: View {
             get: { loginItemService.isEnabled },
             set: { loginItemService.setEnabled($0) }
         )
+    }
+
+    private func copyAgentSetupPrompt() {
+        let endpoint = "http://127.0.0.1:\(settings.agentServerPort)/mcp"
+        let prompt = AgentSetupPrompt.make(
+            endpoint: endpoint,
+            bearerToken: agentAccessToken
+        )
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(prompt, forType: .string)
+        didCopyAgentSetupPrompt = true
     }
 
     private var cloudSyncSection: some View {

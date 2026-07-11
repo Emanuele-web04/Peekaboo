@@ -100,8 +100,17 @@ final class TaskStore: ObservableObject {
     private var remoteChangeObservation: AnyCancellable?
     private var cloudKitEventObservation: AnyCancellable?
     private var cloudImportRefreshTask: Task<Void, Never>?
+#if os(macOS)
+    private var exportActivityToken: NSObjectProtocol?
+    private var importActivityToken: NSObjectProtocol?
+    private var exportActivityTimeoutTask: Task<Void, Never>?
+    private var importActivityTimeoutTask: Task<Void, Never>?
+#endif
     private var snapshotCache: [TaskScope: (revision: UInt64, snapshot: TaskScopeSnapshot)] = [:]
     private static let manualOrderStride: Int64 = 1_024
+#if os(macOS)
+    private static let cloudSyncActivityTimeout: Duration = .seconds(120)
+#endif
 
     init(
         container: ModelContainer,
@@ -420,6 +429,7 @@ final class TaskStore: ObservableObject {
             try persist(context)
             lastErrorMessage = nil
             revision &+= 1
+            beginProtectedCloudSyncActivity(for: .exportData)
             return true
         } catch {
             let saveError = error.localizedDescription
@@ -506,7 +516,7 @@ final class TaskStore: ObservableObject {
                 kind: kind,
                 endedAt: event.endDate,
                 succeeded: event.succeeded,
-                errorMessage: event.error?.localizedDescription
+                errorMessage: Self.cloudSyncErrorMessage(event.error)
             ))
         }
     }
@@ -516,7 +526,16 @@ final class TaskStore: ObservableObject {
     /// SwiftData import. Coalesce completed imports and replace the context so
     /// the panel cannot remain attached to stale model instances.
     func handleCloudSyncEvent(_ update: CloudSyncEventUpdate) {
+        if update.endedAt == nil {
+            beginProtectedCloudSyncActivity(for: update.kind)
+        } else if update.kind == .exportData {
+            endProtectedCloudSyncActivity(for: .exportData)
+        }
+
         cloudSyncStatus.apply(update)
+        if !update.succeeded, let errorMessage = update.errorMessage {
+            NSLog("CloudKit %@ failed: %@", String(describing: update.kind), errorMessage)
+        }
         // A failed import may still have committed earlier batches. Refresh
         // after every completed import so partially applied changes are not
         // left hidden behind stale SwiftData model instances.
@@ -527,9 +546,82 @@ final class TaskStore: ObservableObject {
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled else { return }
             self?.refresh()
+            self?.endProtectedCloudSyncActivity(for: .importData)
             self?.cloudImportRefreshTask = nil
         }
     }
+
+    /// Peekaboo is an LSUIElement app and is normally hidden. Keep the process
+    /// out of App Nap only while Core Data is handing a local save to CloudKit
+    /// or applying an import, then release the assertion immediately. The
+    /// timeout is a safety net for framework events that never complete.
+    private func beginProtectedCloudSyncActivity(for kind: CloudSyncActivityKind) {
+#if os(macOS)
+        guard kind != .setup else { return }
+
+        let processInfo = ProcessInfo.processInfo
+        let reason: String
+        switch kind {
+        case .exportData:
+            reason = "Exporting Peekaboo changes to iCloud"
+            if exportActivityToken == nil {
+                exportActivityToken = processInfo.beginActivity(
+                    options: .userInitiatedAllowingIdleSystemSleep,
+                    reason: reason
+                )
+            }
+            exportActivityTimeoutTask?.cancel()
+            exportActivityTimeoutTask = activityTimeoutTask(for: .exportData)
+        case .importData:
+            reason = "Importing Peekaboo changes from iCloud"
+            if importActivityToken == nil {
+                importActivityToken = processInfo.beginActivity(
+                    options: .userInitiatedAllowingIdleSystemSleep,
+                    reason: reason
+                )
+            }
+            importActivityTimeoutTask?.cancel()
+            importActivityTimeoutTask = activityTimeoutTask(for: .importData)
+        case .setup:
+            break
+        }
+#endif
+    }
+
+    private func endProtectedCloudSyncActivity(for kind: CloudSyncActivityKind) {
+#if os(macOS)
+        switch kind {
+        case .exportData:
+            exportActivityTimeoutTask?.cancel()
+            exportActivityTimeoutTask = nil
+            if let exportActivityToken {
+                ProcessInfo.processInfo.endActivity(exportActivityToken)
+                self.exportActivityToken = nil
+            }
+        case .importData:
+            importActivityTimeoutTask?.cancel()
+            importActivityTimeoutTask = nil
+            if let importActivityToken {
+                ProcessInfo.processInfo.endActivity(importActivityToken)
+                self.importActivityToken = nil
+            }
+        case .setup:
+            break
+        }
+#endif
+    }
+
+#if os(macOS)
+    private func activityTimeoutTask(
+        for kind: CloudSyncActivityKind
+    ) -> Task<Void, Never> {
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: Self.cloudSyncActivityTimeout)
+            guard !Task.isCancelled else { return }
+            self?.endProtectedCloudSyncActivity(for: kind)
+        }
+    }
+#endif
 
     private func nextManualOrder(
         status: TaskStatus,
@@ -589,6 +681,17 @@ final class TaskStore: ObservableObject {
         case .export: .exportData
         @unknown default: nil
         }
+    }
+
+    private static func cloudSyncErrorMessage(_ error: Error?) -> String? {
+        guard let error else { return nil }
+        let nsError = error as NSError
+        var message = "\(nsError.domain) \(nsError.code): \(nsError.localizedDescription)"
+        if let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            message += " · \(underlyingError.domain) \(underlyingError.code): "
+                + underlyingError.localizedDescription
+        }
+        return message
     }
 
     private static func normalized(_ title: String) -> String {

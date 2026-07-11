@@ -90,6 +90,8 @@ Usage Information** in App Store Connect:
 
 When Agent access is explicitly enabled, Peekaboo serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. The feature is disabled by default and every request must include the random bearer token shown under Settings → Agent access. Authorized clients such as Claude Code, Synara, Codex or Cursor can list, create, update, complete and delete tasks, and every change appears live in the panel. Change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
 
+Settings also provides **Copy setup prompt**, which creates a client-aware prompt containing the local endpoint and private bearer token. Paste it into Codex, Synara, or Claude to have that client configure or repair only its `peekaboo` MCP entry and verify the connection.
+
 Tools: `list_tasks`, `create_task`, `update_task` (set `status` to `done` to complete), `delete_task`. Statuses are `todo`, `inProgress`, `done`, `backlog`; priorities are `none`, `low`, `medium`, `high`.
 
 Claude Code / Synara (available in every project via `--scope user`):

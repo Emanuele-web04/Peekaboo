@@ -766,7 +766,38 @@
 			};
 			name = Release;
 		};
-		24A54969BB0451E6CB07F9B8D724DA02 /* Local */ = {
+		17C2C24A7CB0A93381B65533E000B793 /* Local */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = development;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Peekaboo/PeekabooLocal.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = HR24WHR326;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				ICLOUD_CONTAINER_ENVIRONMENT = Development;
+				INFOPLIST_FILE = Peekaboo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Local;
+		};
+		1B627F0EBA5D1A8EB9B1EF4089CC4B21 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
@@ -775,7 +806,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = HR24WHR326;
 				GENERATE_INFOPLIST_FILE = NO;
 				ICLOUD_CONTAINER_ENVIRONMENT = Development;
@@ -797,7 +828,7 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
-			name = Local;
+			name = Debug;
 		};
 		25C8B59FAA3D4A20E7D07F639AFC4B30 /* Local */ = {
 			isa = XCBuildConfiguration;
@@ -830,40 +861,6 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Peekaboo.app/Contents/MacOS/Peekaboo";
 			};
 			name = Debug;
-		};
-		4FD696A32352B1C2CF805BE9623B5E18 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APS_ENVIRONMENT = production;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
-				DEVELOPMENT_TEAM = HR24WHR326;
-				GENERATE_INFOPLIST_FILE = NO;
-				ICLOUD_CONTAINER_ENVIRONMENT = Production;
-				INFOPLIST_FILE = PeekabooMobile/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
-				PRODUCT_MODULE_NAME = PeekabooMobile;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
 		};
 		557A27FA90EB579086CD7F1390257120 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -962,34 +959,37 @@
 			};
 			name = Debug;
 		};
-		615E3B09927EED2B53D22ADE94C5131A /* Release */ = {
+		74A28B6CA126A7E086E16D5BC4F939E0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Peekaboo/Peekaboo.entitlements;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = HR24WHR326;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				ICLOUD_CONTAINER_ENVIRONMENT = Production;
-				INFOPLIST_FILE = Peekaboo/Info.plist;
+				INFOPLIST_FILE = PeekabooMobile/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
+				PRODUCT_MODULE_NAME = PeekabooMobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -1072,25 +1072,7 @@
 			};
 			name = Release;
 		};
-		9541ADD54DD7CDFEECB1691667A88F24 /* Local */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = HR24WHR326;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.PeekabooMobileUITests;
-				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = PeekabooMobile;
-			};
-			name = Local;
-		};
-		A2D84871BDB4F55DBCADFE8B0F268760 /* Debug */ = {
+		85985D8C8135043CE7E6F2CCDF16030D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
@@ -1099,7 +1081,7 @@
 				CODE_SIGN_ENTITLEMENTS = Peekaboo/PeekabooDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = HR24WHR326;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1121,38 +1103,54 @@
 			};
 			name = Debug;
 		};
-		A54F8459DAB191F090F65F98A6DA167D /* Debug */ = {
+		9541ADD54DD7CDFEECB1691667A88F24 /* Local */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APS_ENVIRONMENT = development;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = HR24WHR326;
-				GENERATE_INFOPLIST_FILE = NO;
-				ICLOUD_CONTAINER_ENVIRONMENT = Development;
-				INFOPLIST_FILE = PeekabooMobile/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
-				PRODUCT_MODULE_NAME = PeekabooMobile;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.PeekabooMobileUITests;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = PeekabooMobile;
 			};
-			name = Debug;
+			name = Local;
+		};
+		A603E494F4A809C61A66E55D9100E390 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = production;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Peekaboo/Peekaboo.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = HR24WHR326;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				ICLOUD_CONTAINER_ENVIRONMENT = Production;
+				INFOPLIST_FILE = Peekaboo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
 		};
 		ACAF7FED64CE47516BE9639BECF0B34D /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1277,34 +1275,36 @@
 			};
 			name = Local;
 		};
-		F89E10F1A54DBAD00D6CA55259DB5130 /* Local */ = {
+		DC887D66037042E268C39247E6ADECBB /* Local */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Peekaboo/PeekabooLocal.entitlements;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = HR24WHR326;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				ICLOUD_CONTAINER_ENVIRONMENT = Development;
-				INFOPLIST_FILE = Peekaboo/Info.plist;
+				INFOPLIST_FILE = PeekabooMobile/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
+				PRODUCT_MODULE_NAME = PeekabooMobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Local;
 		};
@@ -1314,9 +1314,9 @@
 		05657B4B0041AB47C00006D24BFA59C7 /* Build configuration list for PBXNativeTarget "PeekabooMobile" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4FD696A32352B1C2CF805BE9623B5E18 /* Release */,
-				A54F8459DAB191F090F65F98A6DA167D /* Debug */,
-				24A54969BB0451E6CB07F9B8D724DA02 /* Local */,
+				74A28B6CA126A7E086E16D5BC4F939E0 /* Release */,
+				1B627F0EBA5D1A8EB9B1EF4089CC4B21 /* Debug */,
+				DC887D66037042E268C39247E6ADECBB /* Local */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1364,9 +1364,9 @@
 		D11444E5306A7637585792DCD8D23478 /* Build configuration list for PBXNativeTarget "Peekaboo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				615E3B09927EED2B53D22ADE94C5131A /* Release */,
-				A2D84871BDB4F55DBCADFE8B0F268760 /* Debug */,
-				F89E10F1A54DBAD00D6CA55259DB5130 /* Local */,
+				A603E494F4A809C61A66E55D9100E390 /* Release */,
+				85985D8C8135043CE7E6F2CCDF16030D /* Debug */,
+				17C2C24A7CB0A93381B65533E000B793 /* Local */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
