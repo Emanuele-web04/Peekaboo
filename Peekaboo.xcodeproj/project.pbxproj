@@ -275,7 +275,6 @@
 			children = (
 				E4F44BF4B6FF1F9E9A77BF2817F8E492 /* PeekabooMobileUITests.swift */,
 			);
-			name = PeekabooMobileUITests;
 			path = PeekabooMobileUITests;
 			sourceTree = "<group>";
 		};
@@ -284,7 +283,6 @@
 			children = (
 				62C877F0903E44AF83774E087BA6DB9E /* TaskStoreMobileTests.swift */,
 			);
-			name = PeekabooMobileTests;
 			path = PeekabooMobileTests;
 			sourceTree = "<group>";
 		};
@@ -293,7 +291,6 @@
 			children = (
 				37C89E71F8DFCAAC0F0C0FD46E0FDDD5 /* PeekabooUITests.swift */,
 			);
-			name = PeekabooUITests;
 			path = PeekabooUITests;
 			sourceTree = "<group>";
 		};
@@ -309,7 +306,6 @@
 				8F1A5AEE551941F1D22A217D28E9312A /* PeekabooMobile.entitlements */,
 				2D4ED475097275B25C9CE80EE29BEEF2 /* Info.plist */,
 			);
-			name = PeekabooMobile;
 			path = PeekabooMobile;
 			sourceTree = "<group>";
 		};
@@ -365,7 +361,6 @@
 				6F16CDFE2CAF40C9CF33649D62BFB84C /* PeekabooLocal.entitlements */,
 				456129FD989A9F9002650F833CAE3671 /* Info.plist */,
 			);
-			name = Peekaboo;
 			path = Peekaboo;
 			sourceTree = "<group>";
 		};
@@ -380,7 +375,6 @@
 				E91C22A306F47BF49D37344A7CA847C4 /* TaskStoreTests.swift */,
 				6E2656CB902779D23E02E1D80CF85930 /* TestSupport.swift */,
 			);
-			name = PeekabooTests;
 			path = PeekabooTests;
 			sourceTree = "<group>";
 		};
@@ -773,6 +767,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Peekaboo/PeekabooLocal.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 10;
@@ -790,6 +785,7 @@
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -805,6 +801,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = HR24WHR326;
@@ -820,6 +817,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
 				PRODUCT_MODULE_NAME = PeekabooMobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -967,6 +965,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = HR24WHR326;
@@ -982,6 +981,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
 				PRODUCT_MODULE_NAME = PeekabooMobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -1079,6 +1079,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Peekaboo/PeekabooDebug.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 10;
@@ -1096,6 +1097,7 @@
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -1128,6 +1130,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Peekaboo/Peekaboo.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 10;
@@ -1145,6 +1148,7 @@
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -1283,6 +1287,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = PeekabooMobile/PeekabooMobile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = HR24WHR326;
@@ -1298,6 +1303,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.Peekaboo;
 				PRODUCT_MODULE_NAME = PeekabooMobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
