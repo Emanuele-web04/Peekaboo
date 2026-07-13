@@ -86,6 +86,84 @@ struct CloudSyncStatus: Equatable {
     }
 }
 
+struct CloudSyncProtectionState: Equatable {
+    private var localSaveGeneration: UInt64 = 0
+    private var exportedSaveGeneration: UInt64 = 0
+    private var exportStartGenerationByID: [UUID: UInt64] = [:]
+    private var activeImportEventIDs: Set<UUID> = []
+    private var importRefreshPending = false
+
+    var protectsExport: Bool {
+        exportedSaveGeneration < localSaveGeneration
+            || !exportStartGenerationByID.isEmpty
+    }
+
+    var protectsImport: Bool {
+        !activeImportEventIDs.isEmpty || importRefreshPending
+    }
+
+    mutating func noteLocalSave() {
+        localSaveGeneration &+= 1
+    }
+
+    mutating func apply(_ update: CloudSyncEventUpdate) {
+        switch (update.kind, update.endedAt) {
+        case (.exportData, nil):
+            if exportStartGenerationByID[update.id] == nil {
+                exportStartGenerationByID[update.id] = localSaveGeneration
+            }
+        case (.exportData, .some):
+            if let coveredGeneration = exportStartGenerationByID.removeValue(forKey: update.id) {
+                exportedSaveGeneration = max(exportedSaveGeneration, coveredGeneration)
+            }
+        case (.importData, nil):
+            activeImportEventIDs.insert(update.id)
+        case (.importData, .some):
+            activeImportEventIDs.remove(update.id)
+            importRefreshPending = true
+        case (.setup, _):
+            break
+        }
+    }
+
+    mutating func completeImportRefresh() {
+        importRefreshPending = false
+    }
+}
+
+private struct TaskReplicaSnapshot: Equatable {
+    let id: UUID
+    let title: String
+    let statusRaw: String
+    let priorityRaw: String
+    let createdAt: Date
+    let updatedAt: Date
+    let completedAt: Date?
+    let manualOrder: Int64?
+
+    init(_ task: TaskItem) {
+        id = task.id
+        title = task.title
+        statusRaw = task.statusRaw
+        priorityRaw = task.priorityRaw
+        createdAt = task.createdAt
+        updatedAt = task.updatedAt
+        completedAt = task.completedAt
+        manualOrder = task.manualOrder
+    }
+}
+
+private enum TaskReplicaMutationError: LocalizedError {
+    case missingReplica(UUID)
+
+    var errorDescription: String? {
+        switch self {
+        case let .missingReplica(id):
+            "The task replicas for \(id.uuidString) could not be loaded safely."
+        }
+    }
+}
+
 @MainActor
 final class TaskStore: ObservableObject {
     @Published private(set) var tasks: [TaskItem] = []
@@ -100,6 +178,7 @@ final class TaskStore: ObservableObject {
     private var remoteChangeObservation: AnyCancellable?
     private var cloudKitEventObservation: AnyCancellable?
     private var cloudImportRefreshTask: Task<Void, Never>?
+    private var cloudSyncProtection = CloudSyncProtectionState()
 #if os(macOS)
     private var exportActivityToken: NSObjectProtocol?
     private var importActivityToken: NSObjectProtocol?
@@ -136,12 +215,24 @@ final class TaskStore: ObservableObject {
         guard !normalizedTitle.isEmpty else { return nil }
 
         let timestamp = now()
+        let manualOrder: Int64?
+        do {
+            manualOrder = try nextManualOrder(
+                status: status,
+                priority: priority,
+                updatedAt: timestamp
+            )
+        } catch {
+            lastErrorMessage = error.localizedDescription
+            return nil
+        }
         let task = TaskItem(
             title: normalizedTitle,
             status: status,
             priority: priority,
             createdAt: timestamp,
-            manualOrder: nextManualOrder(status: status, priority: priority)
+            completedAt: status == .done ? timestamp : nil,
+            manualOrder: manualOrder
         )
         context.insert(task)
         tasks.append(task)
@@ -174,7 +265,13 @@ final class TaskStore: ObservableObject {
         status: TaskStatus? = nil
     ) -> Bool {
         guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
-        let replicas = storedTasks(matching: task.id, fallback: task)
+        let replicas: [TaskItem]
+        do {
+            replicas = try storedTasks(matching: task.id)
+        } catch {
+            lastErrorMessage = error.localizedDescription
+            return false
+        }
         let normalizedTitle = title.map(Self.normalized)
         if let normalizedTitle, normalizedTitle.isEmpty { return false }
 
@@ -184,12 +281,9 @@ final class TaskStore: ObservableObject {
         let titleChanged = destinationTitle != task.title
         let priorityChanged = destinationPriority != task.priority
         let statusChanged = destinationStatus != task.status
+        let visibleSnapshot = TaskReplicaSnapshot(task)
         let replicasNeedRepair = replicas.contains {
-            $0.title != task.title
-                || $0.priority != task.priority
-                || $0.status != task.status
-                || $0.completedAt != task.completedAt
-                || $0.manualOrder != task.manualOrder
+            TaskReplicaSnapshot($0) != visibleSnapshot
         }
         guard titleChanged || priorityChanged || statusChanged || replicasNeedRepair else {
             return true
@@ -198,11 +292,17 @@ final class TaskStore: ObservableObject {
         let timestamp = now()
         let destinationManualOrder: Int64?
         if priorityChanged || statusChanged {
-            destinationManualOrder = nextManualOrder(
-                status: destinationStatus,
-                priority: destinationPriority,
-                excluding: task.id
-            )
+            do {
+                destinationManualOrder = try nextManualOrder(
+                    status: destinationStatus,
+                    priority: destinationPriority,
+                    excluding: task.id,
+                    updatedAt: timestamp
+                )
+            } catch {
+                lastErrorMessage = error.localizedDescription
+                return false
+            }
         } else {
             destinationManualOrder = task.manualOrder
         }
@@ -217,6 +317,7 @@ final class TaskStore: ObservableObject {
             replica.title = destinationTitle
             replica.priority = destinationPriority
             replica.status = destinationStatus
+            replica.createdAt = task.createdAt
             replica.manualOrder = destinationManualOrder
             replica.completedAt = destinationCompletedAt
             replica.updatedAt = timestamp
@@ -254,7 +355,14 @@ final class TaskStore: ObservableObject {
     @discardableResult
     func delete(_ task: TaskItem) -> Bool {
         guard let task = tasks.first(where: { $0.id == task.id }) else { return false }
-        storedTasks(matching: task.id, fallback: task).forEach(context.delete)
+        let replicas: [TaskItem]
+        do {
+            replicas = try storedTasks(matching: task.id)
+        } catch {
+            lastErrorMessage = error.localizedDescription
+            return false
+        }
+        replicas.forEach(context.delete)
         tasks.removeAll { $0.id == task.id }
         return save()
     }
@@ -271,11 +379,15 @@ final class TaskStore: ObservableObject {
 
         let grouped = Dictionary(grouping: stored, by: \.id)
         let expiredIDs = Set(grouped.compactMap { id, replicas -> UUID? in
-            let everyReplicaExpired = replicas.allSatisfy { task in
-                task.status == .done
-                    && task.completedAt.map { $0 < cutoff } == true
+            guard let first = replicas.first else { return nil }
+            let agreedSnapshot = TaskReplicaSnapshot(first)
+            guard replicas.dropFirst().allSatisfy({ TaskReplicaSnapshot($0) == agreedSnapshot }) else {
+                return nil
             }
-            return everyReplicaExpired ? id : nil
+            return first.status == .done
+                && first.completedAt.map { $0 < cutoff } == true
+                ? id
+                : nil
         })
         guard !expiredIDs.isEmpty else { return 0 }
         stored.filter { expiredIDs.contains($0.id) }.forEach(context.delete)
@@ -399,17 +511,23 @@ final class TaskStore: ObservableObject {
         guard let destinationIndex = group.firstIndex(where: { $0.id == taskID }) else {
             return false
         }
-        if let sparseOrder = sparseManualOrder(at: destinationIndex, in: group) {
-            movedTask.manualOrder = sparseOrder
-        } else {
-            // Legacy stores can have missing or tightly packed values. Pay the
-            // O(n) rebalance once, then normal reorders only dirty the moved row.
-            assignSpacedManualOrders(to: group)
-        }
         let timestamp = now()
-        for replica in storedTasks(matching: task.id, fallback: task) {
-            replica.manualOrder = movedTask.manualOrder
-            replica.updatedAt = timestamp
+        do {
+            if let sparseOrder = sparseManualOrder(at: destinationIndex, in: group) {
+                for replica in try storedTasks(matching: task.id) {
+                    replica.manualOrder = sparseOrder
+                    replica.updatedAt = timestamp
+                }
+            } else {
+                // Legacy stores can have missing or tightly packed values. Pay the
+                // O(n) rebalance once, then normal reorders only dirty the moved row.
+                try assignSpacedManualOrders(to: group, updatedAt: timestamp)
+            }
+        } catch {
+            context.rollback()
+            refresh()
+            lastErrorMessage = error.localizedDescription
+            return false
         }
         return save()
     }
@@ -429,7 +547,8 @@ final class TaskStore: ObservableObject {
             try persist(context)
             lastErrorMessage = nil
             revision &+= 1
-            beginProtectedCloudSyncActivity(for: .exportData)
+            cloudSyncProtection.noteLocalSave()
+            reconcileProtectedCloudSyncActivity(for: .exportData)
             return true
         } catch {
             let saveError = error.localizedDescription
@@ -482,12 +601,23 @@ final class TaskStore: ObservableObject {
         }
     }
 
-    private func storedTasks(matching id: UUID, fallback: TaskItem) -> [TaskItem] {
-        guard let stored = try? context.fetch(FetchDescriptor<TaskItem>()) else {
-            return [fallback]
+    private func storedTasks(matching id: UUID) throws -> [TaskItem] {
+        let groups = try storedTaskGroups(matching: [id])
+        guard let replicas = groups[id], !replicas.isEmpty else {
+            throw TaskReplicaMutationError.missingReplica(id)
         }
-        let matches = stored.filter { $0.id == id }
-        return matches.isEmpty ? [fallback] : matches
+        return replicas
+    }
+
+    private func storedTaskGroups(
+        matching ids: Set<UUID>
+    ) throws -> [UUID: [TaskItem]] {
+        let stored = try context.fetch(FetchDescriptor<TaskItem>())
+        let groups = Dictionary(grouping: stored.filter { ids.contains($0.id) }, by: \.id)
+        if let missingID = ids.first(where: { groups[$0]?.isEmpty != false }) {
+            throw TaskReplicaMutationError.missingReplica(missingID)
+        }
+        return groups
     }
 
     private func observeRemoteChanges() {
@@ -526,12 +656,8 @@ final class TaskStore: ObservableObject {
     /// SwiftData import. Coalesce completed imports and replace the context so
     /// the panel cannot remain attached to stale model instances.
     func handleCloudSyncEvent(_ update: CloudSyncEventUpdate) {
-        if update.endedAt == nil {
-            beginProtectedCloudSyncActivity(for: update.kind)
-        } else if update.kind == .exportData {
-            endProtectedCloudSyncActivity(for: .exportData)
-        }
-
+        cloudSyncProtection.apply(update)
+        reconcileProtectedCloudSyncActivity(for: update.kind)
         cloudSyncStatus.apply(update)
         if !update.succeeded, let errorMessage = update.errorMessage {
             NSLog("CloudKit %@ failed: %@", String(describing: update.kind), errorMessage)
@@ -546,8 +672,27 @@ final class TaskStore: ObservableObject {
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled else { return }
             self?.refresh()
-            self?.endProtectedCloudSyncActivity(for: .importData)
+            self?.cloudSyncProtection.completeImportRefresh()
+            self?.reconcileProtectedCloudSyncActivity(for: .importData)
             self?.cloudImportRefreshTask = nil
+        }
+    }
+
+    private func reconcileProtectedCloudSyncActivity(for kind: CloudSyncActivityKind) {
+        let shouldProtect: Bool
+        switch kind {
+        case .exportData:
+            shouldProtect = cloudSyncProtection.protectsExport
+        case .importData:
+            shouldProtect = cloudSyncProtection.protectsImport
+        case .setup:
+            return
+        }
+
+        if shouldProtect {
+            beginProtectedCloudSyncActivity(for: kind)
+        } else {
+            endProtectedCloudSyncActivity(for: kind)
         }
     }
 
@@ -626,8 +771,9 @@ final class TaskStore: ObservableObject {
     private func nextManualOrder(
         status: TaskStatus,
         priority: TaskPriority,
-        excluding excludedID: UUID? = nil
-    ) -> Int64? {
+        excluding excludedID: UUID? = nil,
+        updatedAt: Date
+    ) throws -> Int64? {
         let group = tasks.filter {
             $0.id != excludedID && $0.status == status && $0.priority == priority
         }
@@ -636,7 +782,7 @@ final class TaskStore: ObservableObject {
             let orderedGroup = orderedTasks(for: status).filter {
                 $0.id != excludedID && $0.priority == priority
             }
-            assignSpacedManualOrders(to: orderedGroup)
+            try assignSpacedManualOrders(to: orderedGroup, updatedAt: updatedAt)
             return Int64(orderedGroup.count + 1) * Self.manualOrderStride
         }
         return maximum + Self.manualOrderStride
@@ -666,9 +812,17 @@ final class TaskStore: ObservableObject {
         return lower + (distance / 2)
     }
 
-    private func assignSpacedManualOrders(to orderedGroup: [TaskItem]) {
+    private func assignSpacedManualOrders(
+        to orderedGroup: [TaskItem],
+        updatedAt: Date
+    ) throws {
+        let groups = try storedTaskGroups(matching: Set(orderedGroup.map(\.id)))
         for (index, item) in orderedGroup.enumerated() {
-            item.manualOrder = Int64(orderedGroup.count - index) * Self.manualOrderStride
+            let order = Int64(orderedGroup.count - index) * Self.manualOrderStride
+            for replica in groups[item.id] ?? [] {
+                replica.manualOrder = order
+                replica.updatedAt = updatedAt
+            }
         }
     }
 

@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
+               BlueprintIdentifier = "7ABEFA8004CD36BC249BAB3AA717B0A4"
                BuildableName = "PeekabooMobile.app"
                BlueprintName = "PeekabooMobile"
                ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -30,7 +30,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
+            BlueprintIdentifier = "7ABEFA8004CD36BC249BAB3AA717B0A4"
             BuildableName = "PeekabooMobile.app"
             BlueprintName = "PeekabooMobile"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -80,7 +80,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
+            BlueprintIdentifier = "7ABEFA8004CD36BC249BAB3AA717B0A4"
             BuildableName = "PeekabooMobile.app"
             BlueprintName = "PeekabooMobile"
             ReferencedContainer = "container:Peekaboo.xcodeproj">
@@ -97,7 +97,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5E8C94A53CF6D74DB1FB7971CD352B68"
+            BlueprintIdentifier = "7ABEFA8004CD36BC249BAB3AA717B0A4"
             BuildableName = "PeekabooMobile.app"
             BlueprintName = "PeekabooMobile"
             ReferencedContainer = "container:Peekaboo.xcodeproj">

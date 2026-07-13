@@ -274,6 +274,22 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertNil(inMemory.cloudKitContainerIdentifier)
     }
 
+    func testDevelopmentFallbackWithoutCloudKitKeepsDevelopmentStore() {
+        let production = PersistenceController.makeConfiguration(
+            cloudSyncEnabled: false,
+            environment: .production
+        )
+        let development = PersistenceController.makeConfiguration(
+            cloudSyncEnabled: false,
+            environment: .development
+        )
+
+        XCTAssertEqual(production.url.lastPathComponent, "default.store")
+        XCTAssertEqual(development.url.lastPathComponent, "development.store")
+        XCTAssertNil(production.cloudKitContainerIdentifier)
+        XCTAssertNil(development.cloudKitContainerIdentifier)
+    }
+
     @MainActor
     func testFailedEditsRestorePersistedValues() throws {
         let gate = PersistenceGate()
@@ -357,6 +373,41 @@ final class TaskStoreTests: XCTestCase {
         store.setStatus(.todo, for: task)
         XCTAssertEqual(task.status, .todo)
         XCTAssertNil(task.completedAt)
+    }
+
+    @MainActor
+    func testCreatingDoneTaskSetsCompletionDate() throws {
+        let timestamp = Date(timeIntervalSince1970: 1_500)
+        let store = try makeTestStore(now: { timestamp })
+
+        let task = try XCTUnwrap(store.create(title: "Already finished", status: .done))
+
+        XCTAssertEqual(task.completedAt, timestamp)
+    }
+
+    @MainActor
+    func testPartialEditFromStaleReferencePreservesImportedFields() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let store = TaskStore(container: container)
+        let capturedTask = try XCTUnwrap(store.create(title: "Original", priority: .low))
+
+        let externalContext = ModelContext(container)
+        let importedTask = try XCTUnwrap(
+            externalContext.fetch(FetchDescriptor<TaskItem>()).first
+        )
+        importedTask.priority = .high
+        importedTask.status = .done
+        importedTask.completedAt = Date(timeIntervalSince1970: 2_000)
+        importedTask.updatedAt = Date(timeIntervalSince1970: 2_000)
+        try externalContext.save()
+        store.refresh()
+
+        XCTAssertTrue(store.update(capturedTask, title: "Renamed locally"))
+        let saved = try XCTUnwrap(store.tasks.first)
+        XCTAssertEqual(saved.title, "Renamed locally")
+        XCTAssertEqual(saved.priority, .high)
+        XCTAssertEqual(saved.status, .done)
+        XCTAssertEqual(saved.completedAt, Date(timeIntervalSince1970: 2_000))
     }
 
     @MainActor
@@ -615,6 +666,61 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertFalse(store.reorder(taskID: UUID(), relativeTo: medium.id))
     }
 
+    @MainActor
+    func testRebalanceUpdatesManualOrderOnEveryPhysicalReplica() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let firstTimestamp = Date(timeIntervalSince1970: 1_000)
+        let secondTimestamp = Date(timeIntervalSince1970: 2_000)
+        let thirdTimestamp = Date(timeIntervalSince1970: 3_000)
+
+        context.insert(TaskItem(
+            id: firstID,
+            title: "First",
+            priority: .medium,
+            createdAt: firstTimestamp,
+            updatedAt: firstTimestamp,
+            manualOrder: 1
+        ))
+        context.insert(TaskItem(
+            id: firstID,
+            title: "First",
+            priority: .medium,
+            createdAt: firstTimestamp,
+            updatedAt: firstTimestamp,
+            manualOrder: 1
+        ))
+        context.insert(TaskItem(
+            id: secondID,
+            title: "Second",
+            priority: .medium,
+            createdAt: secondTimestamp,
+            updatedAt: secondTimestamp,
+            manualOrder: 1
+        ))
+        context.insert(TaskItem(
+            id: thirdID,
+            title: "Third",
+            priority: .medium,
+            createdAt: thirdTimestamp,
+            updatedAt: thirdTimestamp,
+            manualOrder: 1
+        ))
+        try context.save()
+        let store = TaskStore(container: container)
+
+        XCTAssertTrue(store.reorder(taskID: firstID, relativeTo: secondID))
+
+        let verificationContext = ModelContext(container)
+        let replicas = try verificationContext.fetch(FetchDescriptor<TaskItem>())
+        let firstOrders = Set(replicas.filter { $0.id == firstID }.map(\.manualOrder))
+        XCTAssertEqual(firstOrders.count, 1)
+        XCTAssertEqual(Set(replicas.compactMap(\.manualOrder)).count, 3)
+    }
+
     func testCloudSyncStatusTracksActivitySuccessAndFailure() {
         let importID = UUID()
         let exportID = UUID()
@@ -671,5 +777,82 @@ final class TaskStoreTests: XCTestCase {
         ))
         XCTAssertNil(status.lastErrorMessage)
         XCTAssertEqual(status.title, "Synced")
+    }
+
+    func testCloudSyncProtectionKeepsNewerSaveProtectedFromOlderExport() {
+        let firstExportID = UUID()
+        let secondExportID = UUID()
+        var protection = CloudSyncProtectionState()
+
+        protection.noteLocalSave()
+        protection.apply(CloudSyncEventUpdate(
+            id: firstExportID,
+            kind: .exportData,
+            endedAt: nil,
+            succeeded: false,
+            errorMessage: nil
+        ))
+        protection.noteLocalSave()
+        protection.apply(CloudSyncEventUpdate(
+            id: secondExportID,
+            kind: .exportData,
+            endedAt: nil,
+            succeeded: false,
+            errorMessage: nil
+        ))
+        protection.apply(CloudSyncEventUpdate(
+            id: firstExportID,
+            kind: .exportData,
+            endedAt: Date(),
+            succeeded: true,
+            errorMessage: nil
+        ))
+
+        XCTAssertTrue(protection.protectsExport)
+
+        protection.apply(CloudSyncEventUpdate(
+            id: secondExportID,
+            kind: .exportData,
+            endedAt: Date(),
+            succeeded: true,
+            errorMessage: nil
+        ))
+        XCTAssertFalse(protection.protectsExport)
+    }
+
+    func testCloudSyncProtectionKeepsOverlappingImportsProtectedUntilRefresh() {
+        let firstImportID = UUID()
+        let secondImportID = UUID()
+        var protection = CloudSyncProtectionState()
+
+        for id in [firstImportID, secondImportID] {
+            protection.apply(CloudSyncEventUpdate(
+                id: id,
+                kind: .importData,
+                endedAt: nil,
+                succeeded: false,
+                errorMessage: nil
+            ))
+        }
+        protection.apply(CloudSyncEventUpdate(
+            id: firstImportID,
+            kind: .importData,
+            endedAt: Date(),
+            succeeded: true,
+            errorMessage: nil
+        ))
+        protection.completeImportRefresh()
+        XCTAssertTrue(protection.protectsImport)
+
+        protection.apply(CloudSyncEventUpdate(
+            id: secondImportID,
+            kind: .importData,
+            endedAt: Date(),
+            succeeded: true,
+            errorMessage: nil
+        ))
+        XCTAssertTrue(protection.protectsImport)
+        protection.completeImportRefresh()
+        XCTAssertFalse(protection.protectsImport)
     }
 }

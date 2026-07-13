@@ -1,5 +1,23 @@
 import SwiftUI
 
+private enum MobileTaskDropTarget: Hashable {
+    case status(TaskStatus)
+    case task(UUID)
+}
+
+private struct MobileTaskDropTargetPreferenceKey: PreferenceKey {
+    static var defaultValue: [MobileTaskDropTarget: CGRect] = [:]
+
+    static func reduce(
+        value: inout [MobileTaskDropTarget: CGRect],
+        nextValue: () -> [MobileTaskDropTarget: CGRect]
+    ) {
+        value.merge(nextValue(), uniquingKeysWith: { current, newValue in
+            current.union(newValue)
+        })
+    }
+}
+
 struct MobileTaskListScreen: View {
     @ObservedObject var store: TaskStore
     let iCloudAvailability: ICloudAvailability
@@ -7,6 +25,8 @@ struct MobileTaskListScreen: View {
 
     @State private var selectedScope: TaskScope = .tasks
     @State private var editor: MobileTaskEditorConfiguration?
+    @State private var draggingTaskID: UUID?
+    @State private var dropTargetFrames: [MobileTaskDropTarget: CGRect] = [:]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -97,28 +117,32 @@ struct MobileTaskListScreen: View {
             if snapshot.visibleCount == 0 {
                 emptyState
             } else {
-                ForEach(snapshot.sections) { section in
+                ForEach(displayedSections(for: snapshot)) { section in
                     Section {
-                        ForEach(section.tasks) { task in
-                            MobileTaskRow(
-                                store: store,
-                                task: task,
-                                edit: { editor = .edit(task) }
-                            )
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
-                        }
-                        .onMove { source, destination in
-                            move(within: section.tasks, from: source, to: destination)
+                        if section.tasks.isEmpty {
+                            emptySectionDropTarget(status: section.status)
+                        } else {
+                            ForEach(section.tasks) { task in
+                                MobileTaskRow(
+                                    store: store,
+                                    task: task,
+                                    isDragging: draggingTaskID == task.id,
+                                    dragChanged: { _ in
+                                        draggingTaskID = task.id
+                                    },
+                                    dragEnded: { location in
+                                        finishDrag(taskID: task.id, at: location)
+                                    },
+                                    edit: { editor = .edit(task) }
+                                )
+                                .background(dropTargetFrame(for: .task(task.id)))
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
+                            }
                         }
                     } header: {
-                        Text("\(section.status.title) · \(section.tasks.count)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .textCase(nil)
-                            .contentTransition(.numericText())
-                            .accessibilityIdentifier("task-section-\(section.status.rawValue)")
+                        sectionHeader(section)
                     }
                     .listSectionSeparator(.hidden)
                 }
@@ -128,29 +152,71 @@ struct MobileTaskListScreen: View {
         .scrollIndicators(.never)
         .refreshable { await refresh() }
         .safeAreaInset(edge: .bottom) { addTaskButton }
+        .onPreferenceChange(MobileTaskDropTargetPreferenceKey.self) {
+            dropTargetFrames = $0
+        }
     }
 
-    // Maps List onMove indices to TaskStore.reorder, which only accepts drops
-    // on a task with the same status and priority (same rule as on macOS).
-    private func move(within tasks: [TaskItem], from source: IndexSet, to destination: Int) {
-        guard let sourceIndex = source.first,
-              sourceIndex != destination,
-              sourceIndex + 1 != destination else { return }
+    private func displayedSections(for snapshot: TaskScopeSnapshot) -> [TaskSectionSnapshot] {
+        let sectionsByStatus = Dictionary(uniqueKeysWithValues: snapshot.sections.map {
+            ($0.status, $0)
+        })
+        return selectedScope.statuses.map { status in
+            sectionsByStatus[status] ?? TaskSectionSnapshot(status: status, tasks: [])
+        }
+    }
 
-        let moved = tasks[sourceIndex]
-        let target = destination > sourceIndex ? tasks[destination - 1] : tasks[destination]
-        // No withAnimation here: the row is already at its target from the
-        // interactive move; animating the data change makes the List re-diff
-        // against the in-flight drop and can leave it in the wrong state.
-        if !store.reorder(taskID: moved.id, relativeTo: target.id) {
-            // Rejected drop (e.g. across priorities). The List already moved the
-            // row visually; wait for UIKit's drop animation to settle, then
-            // spring the row back to the real order instead of jumping mid-flight.
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(120))
-                withAnimation(reduceMotion ? nil : PeekabooMotion.spring) {
-                    store.objectWillChange.send()
-                }
+    private func sectionHeader(_ section: TaskSectionSnapshot) -> some View {
+        Text("\(section.status.title) · \(section.tasks.count)")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .textCase(nil)
+            .contentTransition(.numericText())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .background(dropTargetFrame(for: .status(section.status)))
+            .accessibilityIdentifier("task-section-\(section.status.rawValue)")
+    }
+
+    private func emptySectionDropTarget(status: TaskStatus) -> some View {
+        Color.clear
+            .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+            .contentShape(Rectangle())
+            .background(dropTargetFrame(for: .status(status)))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .accessibilityElement()
+            .accessibilityLabel("Move to \(status.title)")
+            .accessibilityIdentifier("empty-drop-target-\(status.rawValue)")
+    }
+
+    private func dropTargetFrame(for target: MobileTaskDropTarget) -> some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: MobileTaskDropTargetPreferenceKey.self,
+                value: [target: proxy.frame(in: .global)]
+            )
+        }
+    }
+
+    private func finishDrag(taskID: UUID, at location: CGPoint) {
+        defer { draggingTaskID = nil }
+
+        let matchingTargets = dropTargetFrames.filter { target, frame in
+            target != .task(taskID)
+                && frame.insetBy(dx: -8, dy: -12).contains(location)
+        }
+        let closestTarget = matchingTargets.min { lhs, rhs in
+            abs(lhs.value.midY - location.y) < abs(rhs.value.midY - location.y)
+        }?.key
+        withAnimation(reduceMotion ? nil : PeekabooMotion.spring) {
+            switch closestTarget {
+            case let .task(targetID):
+                _ = store.drop(taskID: taskID, onto: targetID)
+            case let .status(status):
+                _ = store.drop(taskID: taskID, into: status)
+            case nil:
+                break
             }
         }
     }

@@ -45,7 +45,7 @@ final class MCPRequestHandlerTests: XCTestCase {
     func testInitializeFallsBackToLatestSupportedVersion() throws {
         let response = try send(method: "initialize", params: ["protocolVersion": "1999-01-01"])
         let result = try XCTUnwrap(response["result"] as? [String: Any])
-        XCTAssertEqual(result["protocolVersion"] as? String, "2025-06-18")
+        XCTAssertEqual(result["protocolVersion"] as? String, "2025-11-25")
     }
 
     func testNotificationReturnsAcceptedWithoutBody() throws {

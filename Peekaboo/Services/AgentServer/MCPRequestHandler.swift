@@ -14,7 +14,7 @@ struct MCPHTTPResult {
 /// is stateless, so no session ids or SSE streams are needed.
 @MainActor
 final class MCPRequestHandler {
-    static let supportedProtocolVersions = ["2025-06-18", "2025-03-26"]
+    static let supportedProtocolVersions = ["2025-11-25", "2025-06-18", "2025-03-26"]
 
     private let tools: AgentTaskTools
     private let serverVersion: String

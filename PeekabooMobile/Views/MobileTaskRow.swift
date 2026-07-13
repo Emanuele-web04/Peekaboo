@@ -1,13 +1,15 @@
 // Compact iPhone task row with the same internal actions as the macOS panel.
-// Touch mapping: double-tap = double-click. Reordering is owned by the List
-// (ForEach.onMove in MobileTaskListScreen); a row context menu would steal
-// the long press that starts the reorder drag, so the row must not add one.
+// Touch mapping: double-tap = double-click. Drag/reorder is owned by
+// MobileTaskListScreen; a row context menu would steal its long press.
 import SwiftUI
 import UIKit
 
 struct MobileTaskRow: View {
     @ObservedObject var store: TaskStore
     let task: TaskItem
+    let isDragging: Bool
+    let dragChanged: (CGPoint) -> Void
+    let dragEnded: (CGPoint) -> Void
     let edit: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -47,6 +49,23 @@ struct MobileTaskRow: View {
                             }
                         }
                 )
+
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
+                .scaleEffect(isDragging ? 1.15 : 1)
+                .highPriorityGesture(
+                    DragGesture(
+                        minimumDistance: 4,
+                        coordinateSpace: .global
+                    )
+                    .onChanged { dragChanged($0.location) }
+                    .onEnded { dragEnded($0.location) }
+                )
+                .accessibilityLabel("Drag \(task.title)")
+                .accessibilityIdentifier("drag-task-\(task.id.uuidString)")
         }
         .padding(.vertical, 2)
         .animation(reduceMotion ? nil : PeekabooMotion.quick, value: task.priorityRaw)

@@ -83,6 +83,8 @@ Usage Information** in App Store Connect:
 - Click the priority-colored circle to complete a task.
 - Click the circle on a completed task to restore it.
 - Drag tasks to reorder them within the same status and priority group.
+- On iPhone, use the three-line handle to drag a task directly into another
+  status section or onto another task.
 - Drag a task into another app to insert its title as plain text.
 - Use the trailing ellipsis to edit, move, reprioritize or delete a task.
 
@@ -146,9 +148,9 @@ xcodebuild test \
 
 ## Project generation
 
-`Scripts/generate_project.rb` atomically generates the Xcode project using the Ruby `xcodeproj` gem and stable UUIDs. Run it after adding source files that need to be included in the project. Use `--help` to inspect the command without changing the project, or `--output PATH` to generate a separate copy.
+`Scripts/generate_project.rb` atomically generates the Xcode project using the locked Ruby `xcodeproj` gem and stable UUIDs. Install the dependency with `bundle install`, then run `bundle exec ruby Scripts/generate_project.rb` after adding source files that need to be included in the project. Use `--help` to inspect the command without changing the project, or `--output PATH` to generate a separate copy.
 
-Run `ruby Scripts/verify_project_generation.rb` to confirm that two consecutive generations are identical.
+Run `bundle exec ruby Scripts/verify_project_generation.rb` to confirm that two consecutive generations are identical.
 
 ## License
 

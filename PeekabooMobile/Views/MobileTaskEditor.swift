@@ -1,5 +1,29 @@
 import SwiftUI
 
+struct MobileTaskEditPatch: Equatable {
+    let title: String?
+    let priority: TaskPriority?
+    let status: TaskStatus?
+}
+
+struct MobileTaskEditBaseline: Equatable {
+    let title: String
+    let priority: TaskPriority
+    let status: TaskStatus
+
+    func patch(
+        title editedTitle: String,
+        priority editedPriority: TaskPriority,
+        status editedStatus: TaskStatus
+    ) -> MobileTaskEditPatch {
+        MobileTaskEditPatch(
+            title: editedTitle == title ? nil : editedTitle,
+            priority: editedPriority == priority ? nil : editedPriority,
+            status: editedStatus == status ? nil : editedStatus
+        )
+    }
+}
+
 struct MobileTaskEditorConfiguration: Identifiable {
     enum Mode {
         case create(TaskStatus)
@@ -32,6 +56,7 @@ struct MobileTaskEditor: View {
     @State private var title: String
     @State private var priority: TaskPriority
     @State private var status: TaskStatus
+    private let editBaseline: MobileTaskEditBaseline?
     @FocusState private var titleIsFocused: Bool
 
     init(store: TaskStore, configuration: MobileTaskEditorConfiguration) {
@@ -43,10 +68,16 @@ struct MobileTaskEditor: View {
             _title = State(initialValue: "")
             _priority = State(initialValue: .none)
             _status = State(initialValue: status)
+            editBaseline = nil
         case let .edit(task):
             _title = State(initialValue: task.title)
             _priority = State(initialValue: task.priority)
             _status = State(initialValue: task.status)
+            editBaseline = MobileTaskEditBaseline(
+                title: task.title,
+                priority: task.priority,
+                status: task.status
+            )
         }
     }
 
@@ -217,9 +248,20 @@ struct MobileTaskEditor: View {
         let succeeded = withAnimation(PeekabooMotion.spring) {
             switch configuration.mode {
             case .create:
-                store.create(title: title, priority: priority, status: status) != nil
+                return store.create(title: title, priority: priority, status: status) != nil
             case let .edit(task):
-                store.update(task, title: title, priority: priority, status: status)
+                guard let editBaseline else { return false }
+                let patch = editBaseline.patch(
+                    title: title,
+                    priority: priority,
+                    status: status
+                )
+                return store.update(
+                    task,
+                    title: patch.title,
+                    priority: patch.priority,
+                    status: patch.status
+                )
             }
         }
 

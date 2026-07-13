@@ -91,6 +91,9 @@ end
 assets = app_group.new_file('Resources/Assets.xcassets')
 app.resources_build_phase.add_file_reference(assets)
 mobile_app.resources_build_phase.add_file_reference(assets)
+privacy_manifest = app_group.new_file('Resources/PrivacyInfo.xcprivacy')
+app.resources_build_phase.add_file_reference(privacy_manifest)
+mobile_app.resources_build_phase.add_file_reference(privacy_manifest)
 app_group.new_file('Peekaboo.entitlements')
 app_group.new_file('PeekabooDebug.entitlements')
 app_group.new_file('PeekabooLocal.entitlements')
@@ -124,7 +127,7 @@ app.build_configurations.each do |config|
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['SWIFT_EMIT_LOC_STRINGS'] = 'YES'
   settings['MARKETING_VERSION'] = '1.1'
-  settings['CURRENT_PROJECT_VERSION'] = '10'
+  settings['CURRENT_PROJECT_VERSION'] = '11'
   settings['ICLOUD_CONTAINER_ENVIRONMENT'] = config.name == 'Release' ? 'Production' : 'Development'
   settings['APS_ENVIRONMENT'] = config.name == 'Release' ? 'production' : 'development'
   abort "Mismatched Peekaboo CloudKit/APNs environment for #{config.name}" unless
@@ -176,7 +179,7 @@ mobile_app.build_configurations.each do |config|
   settings['TARGETED_DEVICE_FAMILY'] = '1'
   settings['SUPPORTS_MACCATALYST'] = 'NO'
   settings['MARKETING_VERSION'] = '1.0'
-  settings['CURRENT_PROJECT_VERSION'] = '8'
+  settings['CURRENT_PROJECT_VERSION'] = '9'
   settings['ICLOUD_CONTAINER_ENVIRONMENT'] = config.name == 'Release' ? 'Production' : 'Development'
   settings['APS_ENVIRONMENT'] = config.name == 'Release' ? 'production' : 'development'
   abort "Mismatched PeekabooMobile CloudKit/APNs environment for #{config.name}" unless

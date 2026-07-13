@@ -93,4 +93,38 @@ final class DailyCleanupServiceTests: XCTestCase {
         XCTAssertEqual(remaining.count, 2)
         XCTAssertTrue(remaining.allSatisfy { $0.id == sharedID })
     }
+
+    @MainActor
+    func testCleanupPreservesDoneReplicasWithDivergentFields() throws {
+        let now = Date(timeIntervalSince1970: 500_000)
+        let old = now.addingTimeInterval(-3 * 24 * 60 * 60)
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let context = ModelContext(container)
+        let sharedID = UUID()
+        context.insert(TaskItem(
+            id: sharedID,
+            title: "Original title",
+            status: .done,
+            priority: .low,
+            createdAt: old,
+            updatedAt: old,
+            completedAt: old
+        ))
+        context.insert(TaskItem(
+            id: sharedID,
+            title: "Conflicting title",
+            status: .done,
+            priority: .high,
+            createdAt: old,
+            updatedAt: old,
+            completedAt: old
+        ))
+        try context.save()
+
+        let store = TaskStore(container: container)
+        let service = DailyCleanupService(store: store, now: { now })
+
+        XCTAssertEqual(service.performCleanup(), 0)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<TaskItem>()), 2)
+    }
 }

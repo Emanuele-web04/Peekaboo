@@ -1,5 +1,5 @@
-// UI tests for the iPhone app. Mirrors the macOS drag-reorder coverage:
-// verifies rows lift and reorder via long-press drag inside the list.
+// UI tests for the iPhone app. Verifies long-press drag both reorders rows
+// within a section and moves a row directly into another status section.
 import XCTest
 
 final class PeekabooMobileUITests: XCTestCase {
@@ -10,9 +10,16 @@ final class PeekabooMobileUITests: XCTestCase {
         app = XCUIApplication()
         app.launchEnvironment["PEEKABOO_TESTING"] = "1"
         app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
     }
 
-    func testDragReordersTasksWithMatchingPriority() throws {
+    override func tearDownWithError() throws {
+        app.terminate()
+        _ = app.wait(for: .notRunning, timeout: 3)
+        app = nil
+    }
+
+    func testDragReordersWithinSection() throws {
         addTask(named: "Alpha")
         addTask(named: "Beta")
 
@@ -23,7 +30,9 @@ final class PeekabooMobileUITests: XCTestCase {
         // Newest first: Beta sits above Alpha.
         XCTAssertLessThan(second.frame.minY, first.frame.minY)
 
-        second.press(forDuration: 1.0, thenDragTo: first)
+        let secondDragHandle = app.images["Drag Beta"]
+        XCTAssertTrue(secondDragHandle.waitForExistence(timeout: 3))
+        secondDragHandle.press(forDuration: 1.0, thenDragTo: first)
 
         let deadline = Date().addingTimeInterval(3)
         while second.frame.minY <= first.frame.minY, Date() < deadline {
@@ -32,22 +41,40 @@ final class PeekabooMobileUITests: XCTestCase {
         XCTAssertGreaterThan(second.frame.minY, first.frame.minY)
     }
 
-    func testDragAcrossDifferentPrioritiesSnapsBack() throws {
-        addTask(named: "Urgent", priority: "High")
-        addTask(named: "Casual", priority: "Medium")
+    func testDragMovesTaskAcrossSections() throws {
+        addTask(named: "Move me")
 
-        let high = app.staticTexts["Urgent"]
-        let medium = app.staticTexts["Casual"]
-        XCTAssertTrue(high.waitForExistence(timeout: 3))
-        XCTAssertTrue(medium.waitForExistence(timeout: 3))
-        // Priority sorting puts High above Medium.
-        XCTAssertLessThan(high.frame.minY, medium.frame.minY)
+        let dragHandle = app.images["Drag Move me"]
+        let destination = app.staticTexts["task-section-inProgress"]
+        XCTAssertTrue(dragHandle.waitForExistence(timeout: 3))
+        XCTAssertTrue(destination.waitForExistence(timeout: 3))
+        dragHandle.press(
+            forDuration: 1.2,
+            thenDragTo: destination,
+            withVelocity: .slow,
+            thenHoldForDuration: 0.6
+        )
 
-        medium.press(forDuration: 1.0, thenDragTo: high)
+        let todoSection = app.staticTexts["task-section-todo"]
+        let inProgressSection = app.staticTexts["task-section-inProgress"]
+        let todoIsEmpty = expectation(
+            for: NSPredicate(format: "label CONTAINS '0'"),
+            evaluatedWith: todoSection
+        )
+        let inProgressHasTask = expectation(
+            for: NSPredicate(format: "label CONTAINS '1'"),
+            evaluatedWith: inProgressSection
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [todoIsEmpty, inProgressHasTask], timeout: 4),
+            .completed
+        )
+        XCTAssertTrue(app.staticTexts["Move me"].exists)
 
-        // The move is invalid, so the order must settle back unchanged.
-        RunLoop.current.run(until: Date().addingTimeInterval(1.5))
-        XCTAssertLessThan(high.frame.minY, medium.frame.minY)
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "iPhone cross-section drag"
+        proof.lifetime = .keepAlways
+        add(proof)
     }
 
     func testDoubleTapMovesTaskToInProgress() throws {

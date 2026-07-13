@@ -33,7 +33,6 @@ enum PersistenceController {
         )
         let resolvedEnvironment = environment ?? currentCloudKitEnvironment
         guard !inMemory,
-              cloudSyncEnabled,
               resolvedEnvironment == .development else {
             return defaultConfiguration
         }
@@ -145,7 +144,7 @@ enum PersistenceController {
         defaults: UserDefaults = .standard,
         fileManager: FileManager = .default
     ) throws {
-        let marker = "didCreatePreCloudKitStoreBackupV1"
+        let marker = "didCreatePreCloudKitStoreBackupV2.\(configuration.url.standardizedFileURL.path)"
         guard !defaults.bool(forKey: marker) else { return }
 
         let storeURL = configuration.url

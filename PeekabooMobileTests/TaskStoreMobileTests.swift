@@ -21,4 +21,22 @@ final class TaskStoreMobileTests: XCTestCase {
         XCTAssertTrue(store.update(task, status: .todo))
         XCTAssertEqual(task.status, .todo)
     }
+
+    func testEditorPatchIncludesOnlyFieldsChangedByTheUser() {
+        let baseline = MobileTaskEditBaseline(
+            title: "Original",
+            priority: .low,
+            status: .todo
+        )
+
+        let patch = baseline.patch(
+            title: "Renamed",
+            priority: .low,
+            status: .todo
+        )
+
+        XCTAssertEqual(patch.title, "Renamed")
+        XCTAssertNil(patch.priority)
+        XCTAssertNil(patch.status)
+    }
 }
