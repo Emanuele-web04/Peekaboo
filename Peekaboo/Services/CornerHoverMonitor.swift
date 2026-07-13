@@ -1,6 +1,12 @@
 import AppKit
 import SwiftUI
 
+enum MouseButtonState {
+    static func isPrimaryPressed(in pressedMouseButtons: Int) -> Bool {
+        (pressedMouseButtons & 1) != 0
+    }
+}
+
 @MainActor
 final class CornerHoverMonitor {
     private let settings: AppSettings
@@ -103,8 +109,10 @@ final class CornerHoverMonitor {
                 .contains(location)
         } ?? false
         let isInPanel = panelController.visibleFrame?.contains(location) ?? false
-        let isMouseButtonPressed = NSEvent.pressedMouseButtons != 0
-        if !isMouseButtonPressed,
+        let isPrimaryMouseButtonPressed = MouseButtonState.isPrimaryPressed(
+            in: NSEvent.pressedMouseButtons
+        )
+        if !isPrimaryMouseButtonPressed,
            let draggedTaskID = uiState.finishDragging(releasedOutsidePanel: !isInPanel) {
             store.startAfterExternalDrag(taskID: draggedTaskID)
         }
@@ -114,7 +122,7 @@ final class CornerHoverMonitor {
             at: uptime,
             isInHotspot: isInHotspot,
             isInPanel: isInPanel,
-            isInteractionLocked: uiState.isInteractionLocked || isMouseButtonPressed,
+            isInteractionLocked: uiState.isInteractionLocked || isPrimaryMouseButtonPressed,
             revealDelay: settings.revealDelay,
             hideDelay: settings.hideDelay
         )
